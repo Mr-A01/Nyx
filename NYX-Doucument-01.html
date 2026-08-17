@@ -1,0 +1,1948 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NYX – Professional Documentation</title>
+  <link href="https://cdn.jsdelivr.net/fontsource/css/inter@latest/index.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/fontsource/css/jetbrains-mono@latest/index.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet">
+  <style>
+    /* ===== CSS Variables & Reset ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0a12;
+      --bg2: #111120;
+      --bg3: #1a1a2e;
+      --surface: #1e1e32;
+      --border: #2a2a44;
+      --text: #e0dce8;
+      --text2: #a8a4b8;
+      --text3: #6a6680;
+      --violet: #8b6cf6;
+      --violet2: #6d4fe0;
+      --violet3: #3d2f7a;
+      --purple: #a78bfa;
+      --green: #4ade80;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --blue: #60a5fa;
+      --cyan: #22d3ee;
+      --radius: 10px;
+      --shadow: 0 4px 30px rgba(0,0,0,0.4);
+      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --sidebar-width: 280px;
+      --header-height: 64px;
+      --font: 'Inter', 'Vazirmatn', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+    html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      display: flex;
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+    a { color: var(--violet); text-decoration: none; transition: color 0.2s; }
+    a:hover { color: var(--purple); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--violet3); border-radius: 4px; }
+
+    /* ===== Sidebar ===== */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s, background 0.3s, border-color 0.3s;
+    }
+    .sidebar-header {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .sidebar-header .logo {
+      font-family: var(--mono);
+      font-size: 20pt;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--text), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.05em;
+    }
+    .sidebar-header .version {
+      font-size: 7pt;
+      color: var(--text3);
+      font-family: var(--mono);
+      background: var(--surface);
+      padding: 2px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+    .sidebar-search {
+      padding: 10px 16px 12px;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .sidebar-search input {
+      width: 100%;
+      padding: 7px 12px 7px 34px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text);
+      font-size: 8.5pt;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .sidebar-search input:focus {
+      border-color: var(--violet);
+      box-shadow: 0 0 0 3px rgba(139,108,246,0.15);
+    }
+    .sidebar-search .search-icon {
+      position: absolute;
+      left: 26px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text3);
+      font-size: 11pt;
+    }
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0 12px;
+    }
+    .sidebar-nav ul { list-style: none; padding: 0; margin: 0; }
+    .sidebar-nav li { margin: 1px 0; }
+    .sidebar-nav a {
+      display: block;
+      padding: 5px 20px 5px 24px;
+      border-radius: 4px;
+      font-size: 8.5pt;
+      color: var(--text2);
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+      font-weight: 450;
+    }
+    .sidebar-nav a:hover {
+      background: var(--surface);
+      color: var(--text);
+      border-left-color: var(--violet);
+    }
+    .sidebar-nav a.active {
+      background: var(--surface);
+      color: var(--purple);
+      border-left-color: var(--purple);
+    }
+    .sidebar-nav .section-group {
+      font-family: var(--mono);
+      font-size: 6.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text3);
+      padding: 12px 20px 4px 20px;
+      font-weight: 600;
+    }
+    .sidebar-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 6.5pt;
+      color: var(--text3);
+      text-align: center;
+      font-family: var(--mono);
+      flex-shrink: 0;
+    }
+
+    /* ===== Main Content ===== */
+    .main {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      padding: 0 48px 60px;
+      max-width: 1100px;
+      background: var(--bg);
+      transition: background 0.3s;
+    }
+
+    /* ===== Top Bar ===== */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--bg);
+      padding: 12px 0 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      backdrop-filter: blur(12px);
+      background: rgba(10,10,18,0.85);
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .topbar .breadcrumb {
+      font-size: 8.5pt;
+      color: var(--text3);
+      font-family: var(--mono);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .topbar .breadcrumb span { color: var(--text2); }
+    .topbar .breadcrumb .sep { color: var(--violet3); }
+    .topbar .controls {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .topbar .controls button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-family: var(--mono);
+      font-size: 7.5pt;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .topbar .controls button:hover {
+      border-color: var(--violet3);
+      color: var(--purple);
+    }
+    .topbar .controls .lang-btn {
+      border-color: var(--violet3);
+      color: var(--purple);
+      min-width: 70px;
+    }
+    .topbar .controls .lang-btn:hover { background: var(--violet3); color: var(--bg); }
+    .topbar .controls .level-btn {
+      border-color: var(--green);
+      color: var(--green);
+      min-width: 90px;
+    }
+    .topbar .controls .level-btn:hover { background: var(--green); color: var(--bg); }
+    .topbar .controls .theme-btn {
+      border-color: var(--blue);
+      color: var(--blue);
+      min-width: 70px;
+    }
+    .topbar .controls .theme-btn:hover { background: var(--blue); color: var(--bg); }
+    .topbar .controls .print-btn {
+      border-color: var(--yellow);
+      color: var(--yellow);
+    }
+    .topbar .controls .print-btn:hover { background: var(--yellow); color: var(--bg); }
+    .menu-toggle {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-family: var(--mono);
+      font-size: 10pt;
+      cursor: pointer;
+    }
+
+    /* ===== Sections ===== */
+    .section {
+      margin-bottom: 48px;
+      scroll-margin-top: 80px;
+      animation: fadeUp 0.5s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .section .section-tag {
+      font-family: var(--mono);
+      font-size: 7.5pt;
+      color: var(--violet3);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .section h2 {
+      font-size: 22pt;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 8px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--border);
+      transition: color 0.3s, border-color 0.3s;
+      letter-spacing: -0.01em;
+    }
+    .section h3 {
+      font-size: 14pt;
+      font-weight: 600;
+      color: var(--purple);
+      margin: 18px 0 8px;
+    }
+    .section h4 {
+      font-size: 11pt;
+      font-weight: 600;
+      color: var(--text);
+      margin: 12px 0 4px;
+    }
+    .section p {
+      font-size: 9.5pt;
+      line-height: 1.8;
+      color: var(--text2);
+      margin-bottom: 10px;
+    }
+    .section strong { color: var(--text); font-weight: 600; }
+    .section em { color: var(--purple); font-style: italic; }
+    .section code {
+      font-family: var(--mono);
+      font-size: 8pt;
+      background: var(--surface);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--purple);
+      border: 1px solid var(--border);
+    }
+    .section pre {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin: 10px 0 14px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 7.5pt;
+      line-height: 1.7;
+      color: var(--text2);
+      position: relative;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .section pre .copy-btn {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text3);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 6pt;
+      cursor: pointer;
+      font-family: var(--mono);
+      transition: all 0.2s;
+      opacity: 0.5;
+    }
+    .section pre .copy-btn:hover { opacity: 1; color: var(--purple); border-color: var(--violet3); }
+    .section pre code { background: none; border: none; padding: 0; font-size: 7.5pt; color: var(--text2); }
+    .kw { color: var(--violet); }
+    .str { color: var(--green); }
+    .num { color: var(--yellow); }
+    .cmt { color: var(--text3); }
+    .typ { color: var(--blue); }
+
+    .section .tbl-wrap {
+      overflow-x: auto;
+      margin: 12px 0 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      transition: border-color 0.3s;
+    }
+    .section table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+    }
+    .section thead { background: var(--bg3); transition: background 0.3s; }
+    .section th {
+      font-family: var(--mono);
+      font-size: 7pt;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text3);
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .section td {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+      vertical-align: top;
+      font-size: 8.5pt;
+      line-height: 1.6;
+      transition: color 0.3s;
+    }
+    .section tr:last-child td { border-bottom: none; }
+
+    .section ul, .section ol {
+      margin: 6px 0 12px 20px;
+      color: var(--text2);
+      font-size: 9pt;
+    }
+    .section li { margin-bottom: 4px; line-height: 1.7; }
+    .section li::marker { color: var(--violet3); }
+
+    .section .callout {
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin: 12px 0;
+      border-left: 4px solid;
+      font-size: 8.5pt;
+      background: rgba(255,255,255,0.02);
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .section .callout p { font-size: 8.5pt; margin-bottom: 0; }
+    .section .callout-info { border-color: var(--blue); background: rgba(96,165,250,0.05); }
+    .section .callout-warn { border-color: var(--yellow); background: rgba(251,191,36,0.05); }
+    .section .callout-danger { border-color: var(--red); background: rgba(248,113,113,0.05); }
+    .section .callout-ok { border-color: var(--green); background: rgba(74,222,128,0.05); }
+    .section .callout-title {
+      font-family: var(--mono);
+      font-size: 7pt;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 3px;
+      font-weight: 600;
+    }
+    .callout-info .callout-title { color: var(--blue); }
+    .callout-warn .callout-title { color: var(--yellow); }
+    .callout-danger .callout-title { color: var(--red); }
+    .callout-ok .callout-title { color: var(--green); }
+
+    .section .badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 6pt;
+      padding: 1px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .badge-mvp { background: rgba(74,222,128,0.15); color: var(--green); border-color: rgba(74,222,128,0.3); }
+    .badge-future { background: rgba(96,165,250,0.15); color: var(--blue); border-color: rgba(96,165,250,0.3); }
+    .badge-exp { background: rgba(251,191,36,0.15); color: var(--yellow); border-color: rgba(251,191,36,0.3); }
+    .badge-crit { background: rgba(248,113,113,0.15); color: var(--red); border-color: rgba(248,113,113,0.3); }
+    .badge-stable { background: rgba(74,222,128,0.1); color: var(--green); border-color: rgba(74,222,128,0.2); }
+
+    .section .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin: 14px 0;
+    }
+    .section .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      transition: background 0.3s, border-color 0.3s, transform 0.2s;
+    }
+    .section .card:hover { transform: translateY(-2px); border-color: var(--violet3); }
+    .section .card h4 { margin-top: 0; font-size: 10.5pt; }
+    .section .card p { font-size: 8.5pt; margin-bottom: 4px; }
+
+    .section .diagram {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin: 12px 0;
+      font-family: var(--mono);
+      font-size: 7pt;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre;
+      color: var(--text2);
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .section .diagram .hl { color: var(--purple); }
+    .section .diagram .dm { color: var(--text3); }
+
+    .section .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 12px 3px 8px;
+      border-radius: 20px;
+      font-size: 7.5pt;
+      font-family: var(--mono);
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .status-indicator .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot.green { background: var(--green); }
+    .dot.yellow { background: var(--yellow); }
+    .dot.red { background: var(--red); }
+    .dot.blue { background: var(--blue); }
+
+    /* ===== RTL ===== */
+    [dir="rtl"] .sidebar { left: auto; right: 0; border-right: none; border-left: 1px solid var(--border); }
+    [dir="rtl"] .main { margin-left: 0; margin-right: var(--sidebar-width); }
+    [dir="rtl"] .sidebar-search .search-icon { left: auto; right: 26px; }
+    [dir="rtl"] .sidebar-nav a { border-left: none; border-right: 2px solid transparent; }
+    [dir="rtl"] .sidebar-nav a:hover, [dir="rtl"] .sidebar-nav a.active { border-right-color: var(--violet); }
+    [dir="rtl"] .section ul, [dir="rtl"] .section ol { margin: 6px 20px 12px 0; }
+    [dir="rtl"] .section .callout { border-left: none; border-right: 4px solid; }
+    [dir="rtl"] .section th, [dir="rtl"] .section td { text-align: right; }
+    [dir="rtl"] .section pre, [dir="rtl"] .section code { direction: ltr; text-align: left; }
+    [dir="rtl"] .topbar .controls { direction: rtl; }
+    [dir="rtl"] .topbar .breadcrumb { direction: rtl; }
+    [dir="rtl"] .section .diagram { direction: ltr; text-align: left; }
+
+    /* ===== Themes ===== */
+    .theme-light {
+      --bg: #f5f5f0; --bg2: #ebebe6; --bg3: #e0e0db; --surface: #d8d8d3;
+      --border: #c8c8c0; --text: #1a1a2e; --text2: #3a3a50; --text3: #7a7a90;
+      --violet: #5b3fd4; --violet2: #4a30b8; --violet3: #8b7bc8; --purple: #6d4fe0;
+      --green: #2d8f4e; --yellow: #b8860b; --red: #b22222; --blue: #1e5fa8; --cyan: #1a7a8a;
+    }
+    .theme-highcontrast {
+      --bg: #000000; --bg2: #1a1a1a; --bg3: #2a2a2a; --surface: #333333;
+      --border: #666666; --text: #ffffff; --text2: #eeeeee; --text3: #cccccc;
+      --violet: #cc99ff; --violet2: #aa77dd; --violet3: #8855bb; --purple: #bb88ff;
+      --green: #66ff99; --yellow: #ffff66; --red: #ff6666; --blue: #66b3ff; --cyan: #66ffff;
+    }
+    .theme-terminal {
+      --bg: #0c0c0c; --bg2: #181818; --bg3: #222222; --surface: #2a2a2a;
+      --border: #3a3a3a; --text: #b3b3b3; --text2: #8a8a8a; --text3: #5a5a5a;
+      --violet: #b3a0ff; --violet2: #8a7ad0; --violet3: #6a5a9a; --purple: #a080ff;
+      --green: #80ff80; --yellow: #ffff80; --red: #ff8080; --blue: #80b3ff; --cyan: #80ffff;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+        border-right: 1px solid var(--border);
+      }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-left: 0; padding: 0 16px 40px; }
+      .topbar { padding: 8px 0; flex-direction: column; align-items: stretch; }
+      .topbar .controls { justify-content: center; }
+      .menu-toggle { display: inline-block; }
+      .section .card-grid { grid-template-columns: 1fr; }
+      .section h2 { font-size: 18pt; }
+    }
+    @media print {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 20px; }
+      .topbar .controls { display: none; }
+      .menu-toggle { display: none; }
+      .section { break-inside: avoid; page-break-inside: avoid; }
+      .section .tbl-wrap, .section pre, .section .callout, .section .card, .section .diagram { break-inside: avoid; }
+      body { background: white; }
+      .section h2 { break-after: avoid; }
+      .topbar { background: white; border-bottom: 1px solid #ccc; backdrop-filter: none; }
+    }
+
+    /* ===== Scroll progress ===== */
+    .scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--violet), var(--purple));
+      z-index: 999;
+      transition: width 0.1s;
+    }
+    .scroll-progress.rtl { left: auto; right: 0; }
+  </style>
+</head>
+<body>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <span class="logo">NYX</span>
+    <span class="version">v3.0</span>
+  </div>
+  <div class="sidebar-search">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search documentation..." data-i18n="sidebar.search">
+  </div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <ul id="navList">
+      <!-- Generated by JS -->
+    </ul>
+  </nav>
+  <div class="sidebar-footer" data-i18n="sidebar.footer">© 2025 · Open Source</div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main" id="mainContent">
+
+  <!-- ===== TOP BAR ===== -->
+  <div class="topbar" id="topbar">
+    <div class="breadcrumb" id="breadcrumb">
+      <span data-i18n="breadcrumb.home">Docs</span>
+      <span class="sep">/</span>
+      <span id="breadcrumbCurrent" data-i18n="breadcrumb.overview">Overview</span>
+    </div>
+    <div class="controls">
+      <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()" data-i18n="sidebar.menu">☰</button>
+      <button class="theme-btn" onclick="toggleTheme()" data-i18n="toolbar.theme">◐ Theme</button>
+      <button class="lang-btn" id="langToggle" onclick="toggleLanguage()" data-i18n="toolbar.lang">🇬🇧 EN</button>
+      <button class="level-btn" id="levelToggle" onclick="toggleLevel()" data-i18n="toolbar.level">🔬 Pro</button>
+      <button class="print-btn" onclick="window.print()" data-i18n="toolbar.print">⎙ Print</button>
+    </div>
+  </div>
+
+  <!-- ===== CONTENT CONTAINER ===== -->
+  <div id="sectionsContainer"></div>
+
+  <!-- ===== FOOTER ===== -->
+  <hr style="border-color:var(--border); margin:40px 0 12px;">
+  <p style="text-align:center; font-size:8pt; color:var(--text3);" data-i18n="footer">NYX Documentation · v3.0 · Open Source · 2025</p>
+</main>
+
+<!-- ============================================================ -->
+<!-- ===== SCRIPTS ===== -->
+<script>
+  // =============================================================
+  // 1. SECTION DATA (with IDs, labels, groups)
+  // =============================================================
+  const sectionsData = [
+    { id: 'overview', label: 'Overview', group: 'Core' },
+    { id: 'getting-started', label: 'Getting Started', group: 'Core' },
+    { id: 'architecture', label: 'Architecture', group: 'Core' },
+    { id: 'identity-auth', label: 'Identity & Auth', group: 'Core' },
+    { id: 'e2ee', label: 'End‑to‑End Encryption', group: 'Protocol' },
+    { id: 'messaging', label: 'Messaging Model', group: 'Protocol' },
+    { id: 'relay-api', label: 'Relay API', group: 'Protocol' },
+    { id: 'federation', label: 'Federation', group: 'Protocol' },
+    { id: 'trust-reputation', label: 'Trust & Reputation', group: 'Infrastructure' },
+    { id: 'integrity', label: 'Software Integrity', group: 'Infrastructure' },
+    { id: 'updates', label: 'Auto‑Update', group: 'Infrastructure' },
+    { id: 'deployment', label: 'Deployment', group: 'Infrastructure' },
+    { id: 'plugins', label: 'Plugins', group: 'Ecosystem' },
+    { id: 'ai-assistant', label: 'AI Assistant', group: 'Ecosystem' },
+    { id: 'token-ledger', label: 'Token & Ledger', group: 'Ecosystem' },
+    { id: 'security', label: 'Security Model', group: 'Ecosystem' },
+    { id: 'devtools', label: 'Developer Tools', group: 'Ecosystem' },
+    { id: 'roadmap', label: 'Roadmap', group: 'Ecosystem' },
+    { id: 'faq', label: 'FAQ', group: 'Ecosystem' },
+    { id: 'changelog', label: 'Changelog', group: 'Ecosystem' },
+    { id: 'appendices', label: 'Appendices', group: 'Ecosystem' }
+  ];
+
+  // =============================================================
+  // 2. COMPLETE TRANSLATIONS (EN + FA, PRO + SIMPLE)
+  // =============================================================
+  const translations = {
+    en: {
+      pro: {
+        // Sidebar
+        "sidebar.search": "Search documentation...",
+        "sidebar.footer": "© 2025 · Open Source",
+        "sidebar.menu": "☰ Menu",
+        "toolbar.theme": "◐ Theme",
+        "toolbar.lang": "🇬🇧 EN",
+        "toolbar.level": "🔬 Pro",
+        "toolbar.print": "⎙ Print",
+        "breadcrumb.home": "Docs",
+        "breadcrumb.overview": "Overview",
+        "footer": "NYX Documentation · v3.0 · Open Source · 2025",
+
+        // Section: Overview
+        "overview.tag": "Overview",
+        "overview.title": "NYX Platform Documentation",
+        "overview.p1": "Welcome to the official NYX documentation. NYX is a terminal‑native, distributed messaging and developer communication platform designed for engineers, security researchers, and infrastructure operators. It combines end‑to‑end encryption, federated relays, verifiable integrity, and a token‑based economy.",
+        "overview.p2": "This documentation covers everything from getting started to advanced topics like federation, security, and plugin development. Use the sidebar to navigate.",
+        "overview.status": "System Status",
+        "overview.card1.title": "🔐 End‑to‑End Encryption",
+        "overview.card1.desc": "X3DH + Double Ratchet with post‑quantum PQXDH. Forward secrecy and post‑compromise security.",
+        "overview.card2.title": "🌐 Federated Relays",
+        "overview.card2.desc": "No central authority. Servers communicate via signed envelopes. Clients can switch relays seamlessly.",
+        "overview.card3.title": "🖥️ Terminal‑First TUI",
+        "overview.card3.desc": "Built for SSH, tmux, and low‑bandwidth environments. Keyboard‑driven, minimal redraw.",
+        "overview.card4.title": "🔍 Verifiable Integrity",
+        "overview.card4.desc": "Signed releases, Merkle integrity trees, atomic updates with rollback.",
+        "overview.card5.title": "🧠 AI Assistant",
+        "overview.card5.desc": "Optional local/remote AI for coding, debugging, and documentation. Strict sandboxing.",
+        "overview.card6.title": "💱 Token Economy",
+        "overview.card6.desc": "NYX token for anti‑spam, relay rewards, and governance. BFT consensus, not PoW.",
+
+        // Section: Getting Started
+        "getting-started.tag": "Getting Started",
+        "getting-started.title": "Quick Start Guide",
+        "getting-started.p1": "This guide will help you set up NYX client and connect to a relay server. Prerequisites: Python 3.11+ and basic terminal familiarity.",
+        "getting-started.h3.install": "Installation",
+        "getting-started.install.code": "pip install nyx-client",
+        "getting-started.h3.config": "Configuration",
+        "getting-started.config.p": "Create a configuration file at <code>~/.config/nyx/config.toml</code> with your identity and server settings.",
+        "getting-started.h3.connect": "Connect to a Relay",
+        "getting-started.connect.p": "Run <code>nyx --connect relay1.nyx.network</code> to connect. You'll be prompted to generate a new identity if you don't have one.",
+        "getting-started.callout.title": "First Run",
+        "getting-started.callout.p": "On first run, NYX will generate an Ed25519 identity key and save it locally. Keep this key safe — it is your identity on the network.",
+
+        // Section: Architecture
+        "arch.tag": "Architecture",
+        "arch.title": "High‑Level Architecture",
+        "arch.p1": "The system comprises four main layers: <strong>Client</strong> (Python TUI), <strong>Relay Network</strong> (PHP servers), <strong>Trust Layer</strong> (multi‑sig admin nodes), and <strong>Ledger</strong> (BFT validators). All communication is encrypted and signed.",
+        "arch.h3.client": "Python Client (Terminal TUI)",
+        "arch.client.li1": "Asyncio‑based event loop with non‑blocking I/O.",
+        "arch.client.li2": "Local encrypted SQLite store (SQLCipher) for messages and keys.",
+        "arch.client.li3": "Plugin system with strict sandboxing and permission manifests.",
+        "arch.client.li4": "Auto‑update with signature and integrity verification.",
+        "arch.h3.relay": "PHP Relay Server",
+        "arch.relay.li1": "Swoole‑based async HTTP/WebSocket server.",
+        "arch.relay.li2": "PostgreSQL for persistent storage, Redis for caching and queues.",
+        "arch.relay.li3": "Federation protocol with signed message envelopes.",
+        "arch.relay.li4": "Reputation and health monitoring endpoints.",
+        "arch.callout.title": "Separation of Concerns",
+        "arch.callout.p": "Each component has a single responsibility. Clients handle crypto and UI; relays route messages and store ciphertext; trust nodes manage identity and revocation; validators maintain the token ledger. This minimises attack surface.",
+        "arch.diagram.label": "System Diagram",
+
+        // Section: Identity & Auth
+        "identity.tag": "Identity",
+        "identity.title": "Cryptographic Identity & Authentication",
+        "identity.p1": "Every user has an Ed25519 identity key (nyx1... bech32). Devices are sub‑keys signed by the identity key. No email or OAuth required.",
+        "identity.table.key": "Key Type",
+        "identity.table.algorithm": "Algorithm",
+        "identity.table.lifetime": "Lifetime",
+        "identity.table.purpose": "Purpose",
+        "identity.r1c1": "Identity Key",
+        "identity.r1c3": "Long‑term",
+        "identity.r1c4": "Sign identity ops",
+        "identity.r2c1": "Device Key",
+        "identity.r2c3": "Per‑device",
+        "identity.r2c4": "Message signing",
+        "identity.r3c1": "Session Key",
+        "identity.r3c3": "Per‑session",
+        "identity.r3c4": "E2EE key agreement",
+        "identity.r4c1": "Prekey",
+        "identity.r4c3": "Until consumed",
+        "identity.r4c4": "Async X3DH",
+        "identity.r5c1": "Recovery Key",
+        "identity.r5c3": "User‑managed",
+        "identity.r5c4": "Encrypted backup",
+
+        // Section: E2EE
+        "e2ee.tag": "Encryption",
+        "e2ee.title": "End‑to‑End Encryption (E2EE)",
+        "e2ee.p1": "NYX uses the <strong>Signal Protocol</strong> (X3DH + Double Ratchet) for private DMs and groups. PQXDH (X‑Wing) is supported for post‑quantum resistance.",
+        "e2ee.li1": "<strong>Forward Secrecy</strong>: each message uses a unique ratchet‑derived key.",
+        "e2ee.li2": "<strong>Post‑Compromise Security</strong>: continuous ratcheting recovers from key leaks.",
+        "e2ee.li3": "<strong>Authentication</strong>: messages are signed with the sender's device key.",
+        "e2ee.li4": "<strong>Replay Protection</strong>: sequence numbers and timestamps.",
+        "e2ee.li5": "<strong>Device Verification</strong>: safety numbers or QR codes.",
+
+        // Section: Messaging
+        "messaging.tag": "Messaging",
+        "messaging.title": "Message Model & Delivery",
+        "messaging.p1": "Messages are structured envelopes with metadata, ciphertext, and signatures. Each conversation has a hash chain for tamper evidence.",
+        "messaging.h3.types": "Conversation Types",
+        "messaging.table.type": "Type",
+        "messaging.table.enc": "Encryption",
+        "messaging.table.vis": "Visibility",
+        "messaging.r1c1": "Direct Message",
+        "messaging.r1c2": "E2EE (Double Ratchet)",
+        "messaging.r1c3": "Participants only",
+        "messaging.r2c1": "Private Group",
+        "messaging.r2c2": "E2EE (group ratchet)",
+        "messaging.r2c3": "Members only",
+        "messaging.r3c1": "Private Channel",
+        "messaging.r3c2": "E2EE (channel keys)",
+        "messaging.r3c3": "Members only",
+        "messaging.r4c1": "Public Channel",
+        "messaging.r4c2": "TLS only",
+        "messaging.r4c3": "Visible to all",
+
+        // Section: Relay API
+        "api.tag": "API",
+        "api.title": "Relay API (REST + WebSocket)",
+        "api.p1": "All endpoints are versioned (<code>/api/v3/</code>). Authentication uses session tokens.",
+        "api.table.endpoint": "Endpoint",
+        "api.table.method": "Method",
+        "api.table.desc": "Description",
+        "api.r1c3": "Register identity",
+        "api.r2c3": "Establish session",
+        "api.r3c3": "Send message",
+        "api.r4c3": "Sync (cursor)",
+        "api.r5c3": "List/create channels",
+        "api.r6c3": "Prekey bundle ops",
+        "api.r7c3": "Inter‑relay forwarding",
+        "api.r8c3": "Trust/reputation",
+        "api.r9c3": "Update manifest",
+        "api.r10c3": "Token transaction",
+        "api.r11c3": "Health check",
+
+        // Section: Federation
+        "fed.tag": "Federation",
+        "fed.title": "Multi‑Relay Federation",
+        "fed.p1": "Clients connect to multiple relays and select routes based on a composite score (latency, reputation, uptime, trust).",
+        "fed.score": "Server selection score = weighted sum of latency, packet loss, uptime, reputation, capacity, trust, geo, compatibility, failures, abuse flags.",
+        "fed.discovery": "Server discovery uses bootstrap lists, local config, and dynamic endpoints with signed updates.",
+
+        // Section: Trust & Reputation
+        "trust.tag": "Trust",
+        "trust.title": "Trust Architecture & Reputation",
+        "trust.p1": "Trust levels: Unknown (0) → Registered (1) → Verified (2) → Trusted (3) → Authority (4). Admin servers use multi‑sig quorum.",
+        "trust.rep": "Reputation is computed from uptime, delivery reliability, integrity, validator attestations, health checks, historical behavior, and audits.",
+        "trust.detection": "Malicious behaviour (forged messages, modification, downtime, spam, integrity mismatch, fake identity) triggers reputation penalties and possible revocation.",
+
+        // Section: Integrity
+        "integrity.tag": "Integrity",
+        "integrity.title": "Software Integrity & Merkle Trees",
+        "integrity.p1": "NYX uses layered integrity: source‑tree, artifact, runtime, environment, and configuration. Each release has a signed manifest with file hashes and a Merkle root.",
+        "integrity.li1": "Modified files (hash mismatch)",
+        "integrity.li2": "Missing or unexpected files",
+        "integrity.li3": "Modified PHP code (per‑file hash)",
+        "integrity.li4": "Downgraded versions (version constraint)",
+        "integrity.li5": "Unapproved plugins (signature verification)",
+
+        // Section: Updates
+        "updates.tag": "Updates",
+        "updates.title": "Auto‑Update System",
+        "updates.p1": "Updates are signed with Ed25519. The client verifies the manifest, artifact hash, version constraints, and TLS transport. Rollback is automatic on health check failure.",
+        "updates.chain": "Offline root key → Release signing key → Signed manifest → Artifact download → Client verification.",
+
+        // Section: Deployment
+        "deploy.tag": "Deployment",
+        "deploy.title": "Production Deployment",
+        "deploy.p1": "NYX can be deployed at various scales. The required stack includes Linux, PHP 8.3+ with Swoole, PostgreSQL, Redis, Nginx/Caddy, Vault, Prometheus, and Grafana.",
+        "deploy.table.scale": "Scale",
+        "deploy.table.users": "Users",
+        "deploy.table.arch": "Architecture",
+        "deploy.r1c1": "Local Dev",
+        "deploy.r1c3": "Docker Compose: PHP + PostgreSQL + Redis",
+        "deploy.r2c1": "Small",
+        "deploy.r2c3": "3–5 relays, basic federation",
+        "deploy.r3c1": "Medium",
+        "deploy.r3c3": "10–20 relays, geo‑distributed, read replicas",
+        "deploy.r4c1": "Large",
+        "deploy.r4c3": "50+ relays, validator cluster, sharded DB",
+        "deploy.r5c1": "Massive",
+        "deploy.r5c3": "Global federation, edge caching, full sharding",
+        "deploy.reqs": "Production Requirements: Linux, PHP 8.3+ with Swoole, PostgreSQL 16+, Redis 7+, Nginx/Caddy, Vault, Prometheus, Grafana, structured JSON logging.",
+
+        // Section: Plugins
+        "plugins.tag": "Plugins",
+        "plugins.title": "Plugin System",
+        "plugins.p1": "Plugins are signed bundles with permission manifests. They run in a strict sandbox with limited capabilities.",
+        "plugins.manifest": "Manifest includes plugin_id, version, author, signature, permissions, sandbox level, and trust level.",
+
+        // Section: AI Assistant
+        "ai.tag": "AI",
+        "ai.title": "Personal AI Assistant",
+        "ai.p1": "Optional local/remote AI for coding, debugging, documentation, and diagnostics. Strict permission controls and sandboxing.",
+        "ai.li1": "Explicit allow‑list for file, commands, network",
+        "ai.li2": "Prompt‑injection defense via input sanitisation",
+        "ai.li3": "Auto‑detection and redaction of secrets",
+        "ai.li4": "Isolated process with limited capabilities",
+        "ai.li5": "Dangerous commands require explicit confirmation",
+
+        // Section: Token & Ledger
+        "token.tag": "Token",
+        "token.title": "NYX Token & Distributed Ledger",
+        "token.p1": "The NYX token is a utility credit for anti‑spam, relay rewards, governance, and reputation staking. The ledger uses committee‑based BFT consensus (not PoW).",
+        "token.li1": "<strong>Transaction Fee</strong>: 0.01 NYX base + size‑based fee.",
+        "token.li2": "<strong>Fee Distribution</strong>: 60% validators, 30% relay operators, 10% burn.",
+        "token.li3": "<strong>Chat Messages</strong>: FREE (no token cost).",
+        "token.li4": "<strong>Consensus</strong>: Rotating committee of trusted validators, BFT with finality in <5 seconds.",
+
+        // Section: Security
+        "security.tag": "Security",
+        "security.title": "Security Model & Threat Mitigations",
+        "security.p1": "Defence‑in‑depth. Main threats and mitigations:",
+        "security.table.actor": "Threat Actor",
+        "security.table.mitigation": "Mitigation",
+        "security.table.residual": "Residual Risk",
+        "security.r1c1": "Malicious user",
+        "security.r1c2": "Signatures, rate limits, abuse system",
+        "security.r1c3": "Low",
+        "security.r2c1": "Spammer",
+        "security.r2c2": "Anti‑Sybil, token costs",
+        "security.r2c3": "Medium",
+        "security.r3c1": "Compromised relay",
+        "security.r3c2": "Multi‑relay, E2EE, reputation",
+        "security.r3c3": "Medium",
+        "security.r4c1": "Compromised admin",
+        "security.r4c2": "Multi‑sig quorum, distributed keys",
+        "security.r4c3": "Low",
+        "security.r5c1": "MITM attacker",
+        "security.r5c2": "TLS + E2EE + cert pinning",
+        "security.r5c3": "Very low",
+        "security.r6c1": "Supply‑chain attacker",
+        "security.r6c2": "Signed releases, integrity verify",
+        "security.r6c3": "Medium",
+        "security.r7c1": "Network observer",
+        "security.r7c2": "Metadata minimization, relay indirection",
+        "security.r7c3": "Medium",
+        "security.callout.title": "Honest Limitations",
+        "security.callout.p": "NYX cannot guarantee perfect anonymity, 100% availability, or protection against a compromised endpoint. The system is tamper‑evident, not tamper‑proof.",
+
+        // Section: Developer Tools
+        "devtools.tag": "Developer",
+        "devtools.title": "Developer Features & Plugins",
+        "devtools.p1": "NYX includes code snippets, Git integration, AI assistant, plugin system, and webhooks.",
+        "devtools.card1.title": "📋 Code Snippets",
+        "devtools.card1.desc": "Syntax‑highlighted code blocks with language detection.",
+        "devtools.card2.title": "🔗 Git Integration",
+        "devtools.card2.desc": "Status, branches, commit logs, and diffs.",
+        "devtools.card3.title": "🤖 AI Assistant",
+        "devtools.card3.desc": "Local/remote AI for coding, debugging, and documentation.",
+        "devtools.card4.title": "🧩 Plugin System",
+        "devtools.card4.desc": "Signed plugins with permission manifests and sandboxing.",
+        "devtools.card5.title": "📊 Webhooks",
+        "devtools.card5.desc": "Incoming and outgoing webhooks for CI/CD and automation.",
+
+        // Section: Roadmap
+        "roadmap.tag": "Roadmap",
+        "roadmap.title": "Development Roadmap",
+        "roadmap.badge.mvp": "MVP",
+        "roadmap.phase1.title": "Phase 1 – Core Messaging",
+        "roadmap.phase1.desc": "Python client, PHP server, DMs, public channels, basic TUI.",
+        "roadmap.phase2.title": "Phase 2 – E2EE & Security",
+        "roadmap.phase2.desc": "X3DH, Double Ratchet, multi‑device, security audit.",
+        "roadmap.phase3.title": "Phase 3 – Federation",
+        "roadmap.phase3.desc": "Multi‑relay routing, discovery, cross‑server messaging.",
+        "roadmap.phase4.title": "Phase 4 – Integrity & Updates",
+        "roadmap.phase4.desc": "Signed releases, Merkle trees, auto‑update with rollback.",
+        "roadmap.phase5.title": "Phase 5 – Reputation & Trust",
+        "roadmap.phase5.desc": "Reputation system, malicious detection, revocation.",
+        "roadmap.phase6.title": "Phase 6 – Developer Platform",
+        "roadmap.phase6.desc": "Git, plugins, webhooks, AI assistant.",
+        "roadmap.phase7.title": "Phase 7 – Token & Ledger",
+        "roadmap.phase7.desc": "NYX token, BFT consensus, rewards.",
+        "roadmap.phase8.title": "Phase 8 – Advanced",
+        "roadmap.phase8.desc": "AI scaling, governance, anti‑censorship, mobile.",
+
+        // Section: FAQ
+        "faq.tag": "FAQ",
+        "faq.title": "Frequently Asked Questions",
+        "faq.q1": "Do I need an email to create an account?",
+        "faq.a1": "No. NYX uses cryptographic identity keys. No email or third‑party OAuth is required.",
+        "faq.q2": "Is NYX fully decentralized?",
+        "faq.a2": "NYX is federated, not fully decentralized. It uses a network of independent relays and trust nodes, but there is no global consensus for chat data — only for the token ledger.",
+        "faq.q3": "How does NYX handle spam?",
+        "faq.a3": "NYX uses a combination of reputation systems, rate limiting, token costs for certain actions, and anti‑Sybil mechanisms like identity age and proof‑of‑service.",
+        "faq.q4": "Can I run my own relay?",
+        "faq.a4": "Yes. NYX relays are open source and can be run by anyone. The relay will need to be registered and build reputation over time.",
+        "faq.q5": "What happens if my device is lost?",
+        "faq.a5": "If you have a recovery key (BIP39 mnemonic), you can recover your identity on a new device. Without it, the identity is unrecoverable.",
+
+        // Section: Changelog
+        "changelog.tag": "Changelog",
+        "changelog.title": "Release History",
+        "changelog.v3.1": "v3.1.0 – 2025-03-15",
+        "changelog.v3.1.desc": "Added PQXDH post‑quantum key agreement, improved federation routing, fixed memory leak in sync manager.",
+        "changelog.v3.0": "v3.0.0 – 2025-01-20",
+        "changelog.v3.0.desc": "Major rewrite: new architecture, E2EE by default, token ledger, plugin system, AI assistant.",
+        "changelog.v2.5": "v2.5.0 – 2024-11-01",
+        "changelog.v2.5.desc": "Added multi‑device support, improved terminal UI, initial reputation system.",
+        "changelog.v2.0": "v2.0.0 – 2024-08-15",
+        "changelog.v2.0.desc": "First public beta: basic messaging, federation, CLI client.",
+
+        // Section: Appendices
+        "appendix.tag": "Appendix",
+        "appendix.title": "Appendices",
+        "appendix.h3.a": "A. Configuration Example (client)",
+        "appendix.h3.b": "B. CLI Commands Reference",
+        "appendix.h3.c": "C. Cryptographic Inventory",
+        "appendix.h3.d": "D. Glossary of Terms"
+      },
+      simple: {}
+    },
+    fa: {
+      pro: {
+        // Sidebar
+        "sidebar.search": "جستجوی مستندات...",
+        "sidebar.footer": "© ۲۰۲۵ · منبع باز",
+        "sidebar.menu": "☰ منو",
+        "toolbar.theme": "◐ تم",
+        "toolbar.lang": "🇮🇷 فارسی",
+        "toolbar.level": "🔬 حرفه‌ای",
+        "toolbar.print": "⎙ چاپ",
+        "breadcrumb.home": "مستندات",
+        "breadcrumb.overview": "مرور",
+        "footer": "مستندات NYX · نسخه ۳.۰ · منبع باز · ۲۰۲۵",
+
+        // Section: Overview
+        "overview.tag": "مرور",
+        "overview.title": "مستندات پلتفرم NYX",
+        "overview.p1": "به مستندات رسمی NYX خوش آمدید. NYX یک پلتفرم پیام‌رسانی توزیع‌شده و بومی ترمینال است که برای مهندسان، محققان امنیتی و اپراتورهای زیرساخت طراحی شده است. این پلتفرم رمزگذاری سرتاسری، رله‌های فدرال، یکپارچگی قابل تأیید و اقتصاد مبتنی بر توکن را ترکیب می‌کند.",
+        "overview.p2": "این مستندات همه چیز را از شروع کار تا موضوعات پیشرفته مانند فدراسیون، امنیت و توسعه افزونه پوشش می‌دهد. از نوار کناری برای حرکت استفاده کنید.",
+        "overview.status": "وضعیت سیستم",
+        "overview.card1.title": "🔐 رمزگذاری سرتاسری",
+        "overview.card1.desc": "X3DH + Double Ratchet با PQXDH پسا‑کوانتومی. محرمانگی آینده‌نگر و امنیت پس از افشا.",
+        "overview.card2.title": "🌐 رله‌های فدرال",
+        "overview.card2.desc": "بدون مرجع متمرکز. سرورها با پاکت‌های امضا شده ارتباط برقرار می‌کنند. کلاینت‌ها می‌توانند به‌راحتی رله را عوض کنند.",
+        "overview.card3.title": "🖥️ TUI مبتنی بر ترمینال",
+        "overview.card3.desc": "ساخته شده برای SSH، tmux و محیط‌های با پهنای باند کم. مبتنی بر صفحه‌کلید، بازکشی حداقلی.",
+        "overview.card4.title": "🔍 یکپارچگی قابل تأیید",
+        "overview.card4.desc": "انتشارات امضا شده، درختان یکپارچگی مرکل، به‌روزرسانی اتمی با بازگشت.",
+        "overview.card5.title": "🧠 دستیار هوش مصنوعی",
+        "overview.card5.desc": "هوش مصنوعی اختیاری محلی/راه‌دور برای کدنویسی، اشکال‌زدایی و مستندسازی. محصورسازی سخت‌گیرانه.",
+        "overview.card6.title": "💱 اقتصاد توکن",
+        "overview.card6.desc": "توکن NYX برای ضد هرزنامه، پاداش رله و حاکمیت. اجماع BFT، نه اثبات کار.",
+
+        // Section: Getting Started
+        "getting-started.tag": "شروع کار",
+        "getting-started.title": "راهنمای شروع سریع",
+        "getting-started.p1": "این راهنما به شما کمک می‌کند تا کلاینت NYX را راه‌اندازی کرده و به یک سرور رله متصل شوید. پیش‌نیازها: Python 3.11+ و آشنایی اولیه با ترمینال.",
+        "getting-started.h3.install": "نصب",
+        "getting-started.install.code": "pip install nyx-client",
+        "getting-started.h3.config": "پیکربندی",
+        "getting-started.config.p": "یک فایل پیکربندی در مسیر <code>~/.config/nyx/config.toml</code> با تنظیمات هویت و سرور خود ایجاد کنید.",
+        "getting-started.h3.connect": "اتصال به یک رله",
+        "getting-started.connect.p": "برای اتصال، دستور <code>nyx --connect relay1.nyx.network</code> را اجرا کنید. اگر هویتی نداشته باشید، از شما خواسته می‌شود تا یک هویت جدید ایجاد کنید.",
+        "getting-started.callout.title": "اجرای اولیه",
+        "getting-started.callout.p": "در اولین اجرا، NYX یک کلید هویت Ed25519 تولید کرده و به صورت محلی ذخیره می‌کند. این کلید را ایمن نگه دارید — این کلید هویت شما در شبکه است.",
+
+        // Section: Architecture
+        "arch.tag": "معماری",
+        "arch.title": "معماری سطح بالا",
+        "arch.p1": "سیستم از چهار لایه اصلی تشکیل شده است: <strong>کلاینت</strong> (TUI پایتون)، <strong>شبکه رله</strong> (سرورهای PHP)، <strong>لایه اعتماد</strong> (گره‌های مدیریتی چند‑امضایی) و <strong>دفتر کل</strong> (تأییدکننده‌های BFT). همه ارتباطات رمزگذاری و امضا می‌شوند.",
+        "arch.h3.client": "کلاینت پایتون (TUI ترمینال)",
+        "arch.client.li1": "حلقه رویداد مبتنی بر asyncio با I/O غیربلوکه.",
+        "arch.client.li2": "ذخیره‌سازی محلی SQLite رمزگذاری شده (SQLCipher) برای پیام‌ها و کلیدها.",
+        "arch.client.li3": "سیستم افزونه با محصورسازی سخت‌گیرانه و مانیفست مجوزها.",
+        "arch.client.li4": "به‌روزرسانی خودکار با تأیید امضا و یکپارچگی.",
+        "arch.h3.relay": "سرور رله PHP",
+        "arch.relay.li1": "سرور async HTTP/WebSocket مبتنی بر Swoole.",
+        "arch.relay.li2": "PostgreSQL برای ذخیره‌سازی پایدار، Redis برای کش و صف‌ها.",
+        "arch.relay.li3": "پروتکل فدراسیون با پاکت‌های امضا شده.",
+        "arch.relay.li4": "نقاط پایانی شهرت و نظارت بر سلامت.",
+        "arch.callout.title": "جداسازی وظایف",
+        "arch.callout.p": "هر مؤلفه یک مسئولیت واحد دارد. کلاینت‌ها رمزنگاری و UI را مدیریت می‌کنند؛ رله‌ها پیام‌ها را مسیریابی و متن رمز را ذخیره می‌کنند؛ گره‌های اعتماد هویت و ابطال را مدیریت می‌کنند؛ تأییدکننده‌ها دفتر کل توکن را نگهداری می‌کنند. این طراحی سطح حمله را کاهش می‌دهد.",
+        "arch.diagram.label": "نمودار سیستم",
+
+        // Section: Identity & Auth
+        "identity.tag": "هویت",
+        "identity.title": "هویت رمزنگاری و احراز هویت",
+        "identity.p1": "هر کاربر یک کلید هویت Ed25519 (nyx1... bech32) دارد. دستگاه‌ها زیر‑کلیدهایی هستند که توسط کلید هویت امضا می‌شوند. به ایمیل یا OAuth نیازی نیست.",
+        "identity.table.key": "نوع کلید",
+        "identity.table.algorithm": "الگوریتم",
+        "identity.table.lifetime": "عمر",
+        "identity.table.purpose": "کاربرد",
+        "identity.r1c1": "کلید هویت",
+        "identity.r1c3": "بلندمدت",
+        "identity.r1c4": "امضای عملیات هویت",
+        "identity.r2c1": "کلید دستگاه",
+        "identity.r2c3": "هر دستگاه",
+        "identity.r2c4": "امضای پیام",
+        "identity.r3c1": "کلید جلسه",
+        "identity.r3c3": "هر جلسه",
+        "identity.r3c4": "توافق کلید E2EE",
+        "identity.r4c1": "پیش‌کلید",
+        "identity.r4c3": "تا زمان مصرف",
+        "identity.r4c4": "X3DH ناهمگام",
+        "identity.r5c1": "کلید بازیابی",
+        "identity.r5c3": "مدیریت کاربر",
+        "identity.r5c4": "پشتیبان رمزگذاری شده",
+
+        // Section: E2EE
+        "e2ee.tag": "رمزگذاری",
+        "e2ee.title": "رمزگذاری سرتاسری (E2EE)",
+        "e2ee.p1": "NYX از <strong>پروتکل سیگنال</strong> (X3DH + Double Ratchet) برای پیام‌های خصوصی و گروه‌ها استفاده می‌کند. PQXDH (X‑Wing) برای مقاومت پسا‑کوانتومی پشتیبانی می‌شود.",
+        "e2ee.li1": "<strong>محرمانگی آینده‌نگر</strong>: هر پیام از کلید منحصربه‌فرد مشتق شده از چرخ‌دنده استفاده می‌کند.",
+        "e2ee.li2": "<strong>امنیت پس از افشا</strong>: چرخ‌دنده مداوم از نشت کلید بازیابی می‌کند.",
+        "e2ee.li3": "<strong>احراز هویت</strong>: پیام‌ها با کلید دستگاه فرستنده امضا می‌شوند.",
+        "e2ee.li4": "<strong>محافظت در برابر بازپخش</strong>: شماره ترتیب و زمان‌ها.",
+        "e2ee.li5": "<strong>تأیید دستگاه</strong>: اعداد ایمنی یا کدهای QR.",
+
+        // Section: Messaging
+        "messaging.tag": "پیام‌رسانی",
+        "messaging.title": "مدل پیام و تحویل",
+        "messaging.p1": "پیام‌ها پاکت‌های ساختاریافته با فراداده، متن رمز و امضا هستند. هر گفتگو یک زنجیره هش برای شواهد دستکاری دارد.",
+        "messaging.h3.types": "انواع گفتگو",
+        "messaging.table.type": "نوع",
+        "messaging.table.enc": "رمزگذاری",
+        "messaging.table.vis": "قابلیت مشاهده",
+        "messaging.r1c1": "پیام مستقیم",
+        "messaging.r1c2": "E2EE (Double Ratchet)",
+        "messaging.r1c3": "فقط شرکت‌کنندگان",
+        "messaging.r2c1": "گروه خصوصی",
+        "messaging.r2c2": "E2EE (چرخ‌دنده گروهی)",
+        "messaging.r2c3": "فقط اعضا",
+        "messaging.r3c1": "کانال خصوصی",
+        "messaging.r3c2": "E2EE (کلیدهای کانال)",
+        "messaging.r3c3": "فقط اعضا",
+        "messaging.r4c1": "کانال عمومی",
+        "messaging.r4c2": "فقط TLS",
+        "messaging.r4c3": "قابل مشاهده برای همه",
+
+        // Section: Relay API
+        "api.tag": "API",
+        "api.title": "API رله (REST + WebSocket)",
+        "api.p1": "همه نقاط پایانی نسخه‌بندی شده‌اند (<code>/api/v3/</code>). احراز هویت از توکن‌های جلسه استفاده می‌کند.",
+        "api.table.endpoint": "نقطه پایانی",
+        "api.table.method": "متد",
+        "api.table.desc": "توضیح",
+        "api.r1c3": "ثبت هویت",
+        "api.r2c3": "ایجاد جلسه",
+        "api.r3c3": "ارسال پیام",
+        "api.r4c3": "همگام‌سازی (نشانگر)",
+        "api.r5c3": "لیست/ایجاد کانال",
+        "api.r6c3": "عملیات بسته پیش‌کلید",
+        "api.r7c3": "انتقال بین رله‌ها",
+        "api.r8c3": "اعتماد/شهرت",
+        "api.r9c3": "مانیفست به‌روزرسانی",
+        "api.r10c3": "تراکنش توکن",
+        "api.r11c3": "بررسی سلامت",
+
+        // Section: Federation
+        "fed.tag": "فدراسیون",
+        "fed.title": "فدراسیون چند رله",
+        "fed.p1": "کلاینت‌ها به چندین رله متصل می‌شوند و مسیرها را بر اساس امتیاز ترکیبی (تأخیر، شهرت، uptime، اعتماد) انتخاب می‌کنند.",
+        "fed.score": "امتیاز انتخاب سرور = مجموع وزنی تأخیر، از دست رفتن بسته، uptime، شهرت، ظرفیت، اعتماد، جغرافیا، سازگاری، شکست‌ها و پرچم‌های سوءاستفاده.",
+        "fed.discovery": "کشف سرور از لیست‌های بوت‌استرپ، پیکربندی محلی و نقاط پایانی پویا با به‌روزرسانی‌های امضا شده استفاده می‌کند.",
+
+        // Section: Trust & Reputation
+        "trust.tag": "اعتماد",
+        "trust.title": "معماری اعتماد و شهرت",
+        "trust.p1": "سطوح اعتماد: ناشناس (۰) → ثبت شده (۱) → تأیید شده (۲) → مورد اعتماد (۳) → مرجع (۴). سرورهای مدیریتی از نصاب چند‑امضایی استفاده می‌کنند.",
+        "trust.rep": "شهرت از uptime، قابلیت اطمینان تحویل، یکپارچگی، گواهی‌های تأییدکننده، بررسی‌های سلامت، رفتار تاریخی و حسابرسی محاسبه می‌شود.",
+        "trust.detection": "رفتار مخرب (پیام‌های جعلی، تغییر، خرابی مکرر، هرزنامه، عدم تطابق یکپارچگی، هویت جعلی) باعث جریمه شهرت و احتمالاً ابطال می‌شود.",
+
+        // Section: Integrity
+        "integrity.tag": "یکپارچگی",
+        "integrity.title": "یکپارچگی نرم‌افزار و درختان مرکل",
+        "integrity.p1": "NYX از یکپارچگی لایه‌ای استفاده می‌کند: درخت منبع، اثر، زمان اجرا، محیط و پیکربندی. هر انتشار یک مانیفست امضا شده با هش فایل‌ها و ریشه مرکل دارد.",
+        "integrity.li1": "فایل‌های تغییر یافته (عدم تطابق هش)",
+        "integrity.li2": "فایل‌های از دست رفته یا غیرمنتظره",
+        "integrity.li3": "کد PHP تغییر یافته (هش هر فایل)",
+        "integrity.li4": "نسخه‌های تنزل یافته (محدودیت نسخه)",
+        "integrity.li5": "افزونه‌های تأیید نشده (تأیید امضا)",
+
+        // Section: Updates
+        "updates.tag": "به‌روزرسانی",
+        "updates.title": "سیستم به‌روزرسانی خودکار",
+        "updates.p1": "به‌روزرسانی‌ها با Ed25519 امضا می‌شوند. کلاینت مانیفست، هش اثر، محدودیت‌های نسخه و انتقال TLS را تأیید می‌کند. در صورت شکست بررسی سلامت، بازگشت خودکار انجام می‌شود.",
+        "updates.chain": "کلید ریشه آفلاین → کلید امضای انتشار → مانیفست امضا شده → دانلود اثر → تأیید کلاینت.",
+
+        // Section: Deployment
+        "deploy.tag": "استقرار",
+        "deploy.title": "استقرار در تولید",
+        "deploy.p1": "NYX را می‌توان در مقیاس‌های مختلف مستقر کرد. پشته مورد نیاز شامل Linux، PHP 8.3+ با Swoole، PostgreSQL، Redis، Nginx/Caddy، Vault، Prometheus و Grafana است.",
+        "deploy.table.scale": "مقیاس",
+        "deploy.table.users": "کاربران",
+        "deploy.table.arch": "معماری",
+        "deploy.r1c1": "توسعه محلی",
+        "deploy.r1c3": "Docker Compose: PHP + PostgreSQL + Redis",
+        "deploy.r2c1": "کوچک",
+        "deploy.r2c3": "۳–۵ رله، فدراسیون پایه",
+        "deploy.r3c1": "متوسط",
+        "deploy.r3c3": "۱۰–۲۰ رله، توزیع‌شده جغرافیایی، نسخه‌های خواندنی",
+        "deploy.r4c1": "بزرگ",
+        "deploy.r4c3": "۵۰+ رله، خوشه تأییدکننده، پایگاه داده شارد شده",
+        "deploy.r5c1": "عظیم",
+        "deploy.r5c3": "فدراسیون جهانی، کش لبه، شاردینگ کامل",
+        "deploy.reqs": "نیازمندی‌های تولید: Linux، PHP 8.3+ با Swoole، PostgreSQL 16+، Redis 7+، Nginx/Caddy، Vault، Prometheus، Grafana، ثبت‌نویسی ساختاریافته JSON.",
+
+        // Section: Plugins
+        "plugins.tag": "افزونه‌ها",
+        "plugins.title": "سیستم افزونه",
+        "plugins.p1": "افزونه‌ها بسته‌های امضا شده با مانیفست مجوزها هستند. آنها در یک محصورسازی سخت‌گیرانه با قابلیت‌های محدود اجرا می‌شوند.",
+        "plugins.manifest": "مانیفست شامل plugin_id، نسخه، نویسنده، امضا، مجوزها، سطح محصورسازی و سطح اعتماد است.",
+
+        // Section: AI Assistant
+        "ai.tag": "هوش مصنوعی",
+        "ai.title": "دستیار هوش مصنوعی شخصی",
+        "ai.p1": "هوش مصنوعی اختیاری محلی/راه‌دور برای کدنویسی، اشکال‌زدایی، مستندسازی و تشخیص. کنترل‌های دسترسی سخت‌گیرانه و محصورسازی.",
+        "ai.li1": "لیست مجاز صریح برای فایل، دستورات، شبکه",
+        "ai.li2": "دفاع در برابر تزریق پرامپت از طریق پاک‌سازی ورودی",
+        "ai.li3": "تشخیص خودکار و پنهان‌سازی اسرار",
+        "ai.li4": "فرآیند ایزوله با قابلیت‌های محدود",
+        "ai.li5": "دستورات خطرناک نیاز به تأیید صریح دارند",
+
+        // Section: Token & Ledger
+        "token.tag": "توکن",
+        "token.title": "توکن NYX و دفتر کل توزیع‌شده",
+        "token.p1": "توکن NYX یک اعتبار کاربردی برای ضد هرزنامه، پاداش رله، حاکمیت و تعهد شهرت است. دفتر کل از اجماع BFT مبتنی بر کمیته استفاده می‌کند (نه اثبات کار).",
+        "token.li1": "<strong>کارمزد تراکنش</strong>: 0.01 NYX پایه + کارمزد مبتنی بر اندازه.",
+        "token.li2": "<strong>توزیع کارمزد</strong>: ۶۰٪ تأییدکننده‌ها، ۳۰٪ اپراتورهای رله، ۱۰٪ سوزاندن.",
+        "token.li3": "<strong>پیام‌های چت</strong>: رایگان (هزینه توکن ندارد).",
+        "token.li4": "<strong>اجماع</strong>: کمیته چرخشی از تأییدکننده‌های مورد اعتماد، BFT با نهایی‌سازی در کمتر از ۵ ثانیه.",
+
+        // Section: Security
+        "security.tag": "امنیت",
+        "security.title": "مدل امنیت و کاهش تهدیدات",
+        "security.p1": "دفاع در عمق. تهدیدات اصلی و کاهش‌ها:",
+        "security.table.actor": "بازیگر تهدید",
+        "security.table.mitigation": "کاهش",
+        "security.table.residual": "ریسک باقی‌مانده",
+        "security.r1c1": "کاربر مخرب",
+        "security.r1c2": "امضاها، محدودیت نرخ، سیستم سوءاستفاده",
+        "security.r1c3": "کم",
+        "security.r2c1": "هرزنامه‌دهنده",
+        "security.r2c2": "ضد Sybil، هزینه توکن",
+        "security.r2c3": "متوسط",
+        "security.r3c1": "رله به خطر افتاده",
+        "security.r3c2": "چند رله، E2EE، شهرت",
+        "security.r3c3": "متوسط",
+        "security.r4c1": "مدیر به خطر افتاده",
+        "security.r4c2": "نصاب چند‑امضایی، کلیدهای توزیع‌شده",
+        "security.r4c3": "کم",
+        "security.r5c1": "مهاجم MITM",
+        "security.r5c2": "TLS + E2EE + اتصال گواهی",
+        "security.r5c3": "بسیار کم",
+        "security.r6c1": "مهاجم زنجیره تأمین",
+        "security.r6c2": "انتشارات امضا شده، تأیید یکپارچگی",
+        "security.r6c3": "متوسط",
+        "security.r7c1": "ناظر شبکه",
+        "security.r7c2": "کاهش فراداده، واسطه‌گری رله",
+        "security.r7c3": "متوسط",
+        "security.callout.title": "محدودیت‌های صادقانه",
+        "security.callout.p": "NYX نمی‌تواند ناشناسی کامل، در دسترس بودن ۱۰۰٪ یا محافظت در برابر نقطه پایانی به خطر افتاده را تضمین کند. سیستم تغییرناپذیر است، نه ضد دستکاری.",
+
+        // Section: Developer Tools
+        "devtools.tag": "توسعه‌دهنده",
+        "devtools.title": "ویژگی‌های توسعه‌دهنده و افزونه‌ها",
+        "devtools.p1": "NYX شامل قطعه کد، ادغام Git، دستیار هوش مصنوعی، سیستم افزونه و webhook است.",
+        "devtools.card1.title": "📋 قطعه کد",
+        "devtools.card1.desc": "بلوک‌های کد با برجسته‌سازی نحو و تشخیص زبان.",
+        "devtools.card2.title": "🔗 ادغام Git",
+        "devtools.card2.desc": "وضعیت، شاخه‌ها، گزارش commit و تفاوت‌ها.",
+        "devtools.card3.title": "🤖 دستیار هوش مصنوعی",
+        "devtools.card3.desc": "هوش مصنوعی محلی/راه‌دور برای کدنویسی، اشکال‌زدایی و مستندسازی.",
+        "devtools.card4.title": "🧩 سیستم افزونه",
+        "devtools.card4.desc": "افزونه‌های امضا شده با مانیفست مجوزها و محصورسازی.",
+        "devtools.card5.title": "📊 Webhook",
+        "devtools.card5.desc": "Webhook ورودی و خروجی برای CI/CD و اتوماسیون.",
+
+        // Section: Roadmap
+        "roadmap.tag": "نقشه راه",
+        "roadmap.title": "نقشه راه توسعه",
+        "roadmap.badge.mvp": "MVP",
+        "roadmap.phase1.title": "فاز ۱ – پیام‌رسانی هسته",
+        "roadmap.phase1.desc": "کلاینت پایتون، سرور PHP، پیام‌های مستقیم، کانال‌های عمومی، TUI پایه.",
+        "roadmap.phase2.title": "فاز ۲ – E2EE و امنیت",
+        "roadmap.phase2.desc": "X3DH، Double Ratchet، چند دستگاه، حسابرسی امنیتی.",
+        "roadmap.phase3.title": "فاز ۳ – فدراسیون",
+        "roadmap.phase3.desc": "مسیریابی چند رله، کشف، پیام‌رسانی بین سرورها.",
+        "roadmap.phase4.title": "فاز ۴ – یکپارچگی و به‌روزرسانی",
+        "roadmap.phase4.desc": "انتشارات امضا شده، درختان مرکل، به‌روزرسانی خودکار با بازگشت.",
+        "roadmap.phase5.title": "فاز ۵ – شهرت و اعتماد",
+        "roadmap.phase5.desc": "سیستم شهرت، تشخیص مخرب، ابطال.",
+        "roadmap.phase6.title": "فاز ۶ – پلتفرم توسعه‌دهنده",
+        "roadmap.phase6.desc": "Git، افزونه‌ها، webhook، دستیار هوش مصنوعی.",
+        "roadmap.phase7.title": "فاز ۷ – توکن و دفتر کل",
+        "roadmap.phase7.desc": "توکن NYX، اجماع BFT، پاداش.",
+        "roadmap.phase8.title": "فاز ۸ – پیشرفته",
+        "roadmap.phase8.desc": "مقیاس‌پذیری هوش مصنوعی، حاکمیت، ضد سانسور، موبایل.",
+
+        // Section: FAQ
+        "faq.tag": "سوالات متداول",
+        "faq.title": "سوالات متداول",
+        "faq.q1": "آیا برای ایجاد حساب به ایمیل نیاز دارم؟",
+        "faq.a1": "خیر. NYX از کلیدهای هویت رمزنگاری استفاده می‌کند. به ایمیل یا OAuth شخص ثالث نیازی نیست.",
+        "faq.q2": "آیا NYX کاملاً غیرمتمرکز است؟",
+        "faq.a2": "NYX فدرال است، نه کاملاً غیرمتمرکز. از شبکه‌ای از رله‌های مستقل و گره‌های اعتماد استفاده می‌کند، اما برای داده‌های چت اجماع جهانی وجود ندارد — فقط برای دفتر کل توکن.",
+        "faq.q3": "NYX چگونه با هرزنامه برخورد می‌کند؟",
+        "faq.a3": "NYX از ترکیبی از سیستم‌های شهرت، محدودیت نرخ، هزینه توکن برای برخی اقدامات و مکانیزم‌های ضد Sybil مانند سن هویت و اثبات خدمت استفاده می‌کند.",
+        "faq.q4": "آیا می‌توانم رله خودم را اجرا کنم؟",
+        "faq.a4": "بله. رله‌های NYX منبع باز هستند و هر کسی می‌تواند آنها را اجرا کند. رله باید ثبت شود و به مرور زمان شهرت بسازد.",
+        "faq.q5": "اگر دستگاه من گم شود چه اتفاقی می‌افتد؟",
+        "faq.a5": "اگر کلید بازیابی (عبارت یادگاری BIP39) داشته باشید، می‌توانید هویت خود را در یک دستگاه جدید بازیابی کنید. بدون آن، هویت قابل بازیابی نیست.",
+
+        // Section: Changelog
+        "changelog.tag": "تاریخچه تغییرات",
+        "changelog.title": "تاریخچه انتشار",
+        "changelog.v3.1": "v3.1.0 – ۲۰۲۵-۰۳-۱۵",
+        "changelog.v3.1.desc": "افزودن توافق کلید پسا‑کوانتومی PQXDH، بهبود مسیریابی فدراسیون، رفع نشت حافظه در مدیر همگام‌سازی.",
+        "changelog.v3.0": "v3.0.0 – ۲۰۲۵-۰۱-۲۰",
+        "changelog.v3.0.desc": "بازنویسی اساسی: معماری جدید، E2EE به طور پیش‌فرض، دفتر کل توکن، سیستم افزونه، دستیار هوش مصنوعی.",
+        "changelog.v2.5": "v2.5.0 – ۲۰۲۴-۱۱-۰۱",
+        "changelog.v2.5.desc": "افزودن پشتیبانی چند دستگاه، بهبود UI ترمینال، سیستم شهرت اولیه.",
+        "changelog.v2.0": "v2.0.0 – ۲۰۲۴-۰۸-۱۵",
+        "changelog.v2.0.desc": "اولین بتای عمومی: پیام‌رسانی پایه، فدراسیون، کلاینت CLI.",
+
+        // Section: Appendices
+        "appendix.tag": "پیوست",
+        "appendix.title": "پیوست‌ها",
+        "appendix.h3.a": "A. مثال پیکربندی (کلاینت)",
+        "appendix.h3.b": "B. مرجع دستورات CLI",
+        "appendix.h3.c": "C. فهرست رمزنگاری",
+        "appendix.h3.d": "D. واژه‌نامه اصطلاحات"
+      },
+      simple: {}
+    }
+  };
+
+  // Clone pro into simple for both languages
+  function initTranslations() {
+    ['en', 'fa'].forEach(lang => {
+      if (translations[lang] && translations[lang].pro) {
+        translations[lang].simple = JSON.parse(JSON.stringify(translations[lang].pro));
+        if (lang === 'en') {
+          translations[lang].simple['overview.p1'] = "NYX is a secure messaging platform for developers.";
+          translations[lang].simple['overview.p2'] = "This guide covers the basics.";
+          translations[lang].simple['getting-started.p1'] = "Quick setup guide for NYX client.";
+          translations[lang].simple['arch.p1'] = "The system has a client, relays, trust nodes, and a ledger.";
+          translations[lang].simple['identity.p1'] = "Users have cryptographic identity keys. No email needed.";
+          translations[lang].simple['e2ee.p1'] = "NYX uses Signal Protocol for private messages.";
+          translations[lang].simple['messaging.p1'] = "Messages are encrypted and signed.";
+          translations[lang].simple['security.p1'] = "NYX uses defense-in-depth.";
+          translations[lang].simple['faq.q1'] = "Do I need email?";
+          translations[lang].simple['faq.a1'] = "No, NYX uses cryptographic keys.";
+        } else if (lang === 'fa') {
+          translations[lang].simple['overview.p1'] = "NYX یک پلتفرم پیام‌رسانی امن برای توسعه‌دهندگان است.";
+          translations[lang].simple['overview.p2'] = "این راهنما اصول اولیه را پوشش می‌دهد.";
+          translations[lang].simple['getting-started.p1'] = "راهنمای سریع راه‌اندازی کلاینت NYX.";
+          translations[lang].simple['arch.p1'] = "سیستم شامل کلاینت، رله، گره‌های اعتماد و دفتر کل است.";
+          translations[lang].simple['identity.p1'] = "کاربران کلیدهای هویت رمزنگاری دارند. نیازی به ایمیل نیست.";
+          translations[lang].simple['e2ee.p1'] = "NYX از پروتکل سیگنال برای پیام‌های خصوصی استفاده می‌کند.";
+          translations[lang].simple['messaging.p1'] = "پیام‌ها رمزگذاری و امضا می‌شوند.";
+          translations[lang].simple['security.p1'] = "NYX از دفاع در عمق استفاده می‌کند.";
+          translations[lang].simple['faq.q1'] = "آیا به ایمیل نیاز دارم؟";
+          translations[lang].simple['faq.a1'] = "خیر، NYX از کلیدهای رمزنگاری استفاده می‌کند.";
+        }
+      }
+    });
+  }
+  initTranslations();
+  
+  // Clone pro into simple for both languages
+  function initTranslations() {
+    ['en', 'fa'].forEach(lang => {
+      if (translations[lang] && translations[lang].pro) {
+        translations[lang].simple = JSON.parse(JSON.stringify(translations[lang].pro));
+        if (lang === 'en') {
+          translations[lang].simple['overview.p1'] = "NYX is a secure messaging platform for developers.";
+          translations[lang].simple['overview.p2'] = "This guide covers the basics.";
+        } else if (lang === 'fa') {
+          translations[lang].simple['overview.p1'] = "NYX یک پلتفرم پیام‌رسانی امن برای توسعه‌دهندگان است.";
+          translations[lang].simple['overview.p2'] = "این راهنما اصول اولیه را پوشش می‌دهد.";
+        }
+      }
+    });
+  }
+  initTranslations();
+
+  // =============================================================
+  // 3. STATE
+  // =============================================================
+  let currentLang = localStorage.getItem('nyxDocLang') || 'en';
+  let currentLevel = localStorage.getItem('nyxDocLevel') || 'pro';
+  let currentTheme = localStorage.getItem('nyxDocTheme') || 'dark';
+
+  function getTranslation(key) {
+    const t = translations[currentLang]?.[currentLevel] || translations['en']['pro'];
+    return t[key] || key;
+  }
+
+  // =============================================================
+  // 4. BUILD NAVIGATION
+  // =============================================================
+  function buildNav() {
+    const navList = document.getElementById('navList');
+    navList.innerHTML = '';
+    const groups = {};
+    sectionsData.forEach(sec => {
+      if (!groups[sec.group]) groups[sec.group] = [];
+      groups[sec.group].push(sec);
+    });
+    for (const [group, items] of Object.entries(groups)) {
+      const liGroup = document.createElement('li');
+      liGroup.className = 'section-group';
+      liGroup.textContent = group;
+      navList.appendChild(liGroup);
+      items.forEach(sec => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = '#section-' + sec.id;
+        a.dataset.section = sec.id;
+        a.textContent = sec.label;
+        a.addEventListener('click', (e) => {
+          document.querySelectorAll('.sidebar-nav a').forEach(el => el.classList.remove('active'));
+          a.classList.add('active');
+          if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+          document.getElementById('breadcrumbCurrent').textContent = sec.label;
+        });
+        li.appendChild(a);
+        navList.appendChild(li);
+      });
+    }
+    // Highlight active on scroll
+    const sections = document.querySelectorAll('.section');
+    const navLinks = document.querySelectorAll('.sidebar-nav a');
+    window.addEventListener('scroll', () => {
+      let currentId = '';
+      sections.forEach(sec => {
+        const rect = sec.getBoundingClientRect();
+        if (rect.top <= 100) currentId = sec.id.replace('section-', '');
+      });
+      navLinks.forEach(link => {
+        link.classList.toggle('active', link.dataset.section === currentId);
+      });
+      if (currentId) {
+        const label = sectionsData.find(s => s.id === currentId)?.label || currentId;
+        document.getElementById('breadcrumbCurrent').textContent = label;
+      }
+    });
+  }
+
+  // =============================================================
+  // 5. BUILD CONTENT (extended, professional)
+  // =============================================================
+  function buildContent() {
+    const container = document.getElementById('sectionsContainer');
+    container.innerHTML = '';
+
+    const templates = {
+      overview: `
+        <div class="section-tag" data-i18n="overview.tag">Overview</div>
+        <h2 data-i18n="overview.title">NYX Platform Documentation</h2>
+        <p data-i18n="overview.p1">Welcome to the official NYX documentation. NYX is a terminal‑native, distributed messaging and developer communication platform designed for engineers, security researchers, and infrastructure operators. It combines end‑to‑end encryption, federated relays, verifiable integrity, and a token‑based economy.</p>
+        <p data-i18n="overview.p2">This documentation covers everything from getting started to advanced topics like federation, security, and plugin development. Use the sidebar to navigate.</p>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; margin:12px 0;">
+          <span class="status-indicator"><span class="dot green"></span> <span data-i18n="overview.status">System Status</span>: <strong>Operational</strong></span>
+          <span class="status-indicator"><span class="dot blue"></span> <strong>v3.0</strong> · Latest</span>
+        </div>
+        <div class="card-grid">
+          <div class="card"><h4 data-i18n="overview.card1.title">🔐 End‑to‑End Encryption</h4><p data-i18n="overview.card1.desc">X3DH + Double Ratchet with post‑quantum PQXDH. Forward secrecy and post‑compromise security.</p></div>
+          <div class="card"><h4 data-i18n="overview.card2.title">🌐 Federated Relays</h4><p data-i18n="overview.card2.desc">No central authority. Servers communicate via signed envelopes. Clients can switch relays seamlessly.</p></div>
+          <div class="card"><h4 data-i18n="overview.card3.title">🖥️ Terminal‑First TUI</h4><p data-i18n="overview.card3.desc">Built for SSH, tmux, and low‑bandwidth environments. Keyboard‑driven, minimal redraw.</p></div>
+          <div class="card"><h4 data-i18n="overview.card4.title">🔍 Verifiable Integrity</h4><p data-i18n="overview.card4.desc">Signed releases, Merkle integrity trees, atomic updates with rollback.</p></div>
+          <div class="card"><h4 data-i18n="overview.card5.title">🧠 AI Assistant</h4><p data-i18n="overview.card5.desc">Optional local/remote AI for coding, debugging, and documentation. Strict sandboxing.</p></div>
+          <div class="card"><h4 data-i18n="overview.card6.title">💱 Token Economy</h4><p data-i18n="overview.card6.desc">NYX token for anti‑spam, relay rewards, and governance. BFT consensus, not PoW.</p></div>
+        </div>
+      `,
+      'getting-started': `
+        <div class="section-tag" data-i18n="getting-started.tag">Getting Started</div>
+        <h2 data-i18n="getting-started.title">Quick Start Guide</h2>
+        <p data-i18n="getting-started.p1">This guide will help you set up NYX client and connect to a relay server. Prerequisites: Python 3.11+ and basic terminal familiarity.</p>
+        <h3 data-i18n="getting-started.h3.install">Installation</h3>
+        <pre><code class="cmt"># Install the client</code>
+  <span class="kw">pip</span> install nyx-client</pre>
+        <h3 data-i18n="getting-started.h3.config">Configuration</h3>
+        <p data-i18n="getting-started.config.p">Create a configuration file at <code>~/.config/nyx/config.toml</code> with your identity and server settings.</p>
+        <pre><code><span class="cmt"># Example config</span>
+  [identity]
+  key_storage = "encrypted-sqlite"
+
+  [network]
+  default_server = "nyx://relay1.nyx.network"
+  max_relays = 3</code></pre>
+        <h3 data-i18n="getting-started.h3.connect">Connect to a Relay</h3>
+        <p data-i18n="getting-started.connect.p">Run <code>nyx --connect relay1.nyx.network</code> to connect. You'll be prompted to generate a new identity if you don't have one.</p>
+        <div class="callout callout-info">
+          <div class="callout-title" data-i18n="getting-started.callout.title">First Run</div>
+          <p data-i18n="getting-started.callout.p">On first run, NYX will generate an Ed25519 identity key and save it locally. Keep this key safe — it is your identity on the network.</p>
+        </div>
+      `,
+      architecture: `
+        <div class="section-tag" data-i18n="arch.tag">Architecture</div>
+        <h2 data-i18n="arch.title">High‑Level Architecture</h2>
+        <p data-i18n="arch.p1">The system comprises four main layers: <strong>Client</strong> (Python TUI), <strong>Relay Network</strong> (PHP servers), <strong>Trust Layer</strong> (multi‑sig admin nodes), and <strong>Ledger</strong> (BFT validators). All communication is encrypted and signed.</p>
+        <div class="diagram" data-i18n="arch.diagram.label"><span class="hl">┌─────────────┐</span>  TLS+E2EE  <span class="hl">┌─────────────┐</span>  Signed  <span class="hl">┌─────────────┐</span>
+  <span class="hl">│   Python    │</span>─────────────><span class="hl">│    PHP      │</span>──────────><span class="hl">│    PHP      │</span>
+  <span class="hl">│   Client    │</span><─────────────<span class="hl">│   Relay     │</span><──────────<span class="hl">│   Relay     │</span>
+  <span class="hl">└─────────────┘</span>              <span class="hl">└─────────────┘</span>              <span class="hl">└─────────────┘</span>
+       │                              │                              │
+       ▼                              ▼                              ▼
+  <span class="hl">┌─────────────┐</span>              <span class="hl">┌─────────────┐</span>              <span class="hl">┌─────────────┐</span>
+  <span class="hl">│   Trust     │</span>              <span class="hl">│   Ledger    │</span>              <span class="hl">│   Updates   │</span>
+  <span class="hl">│   Layer     │</span>              <span class="hl">│   (BFT)     │</span>              <span class="hl">│   Infra     │</span>
+  <span class="hl">└─────────────┘</span>              <span class="hl">└─────────────┘</span>              <span class="hl">└─────────────┘</span></div>
+        <h3 data-i18n="arch.h3.client">Python Client (Terminal TUI)</h3>
+        <ul>
+          <li data-i18n="arch.client.li1">Asyncio‑based event loop with non‑blocking I/O.</li>
+          <li data-i18n="arch.client.li2">Local encrypted SQLite store (SQLCipher) for messages and keys.</li>
+          <li data-i18n="arch.client.li3">Plugin system with strict sandboxing and permission manifests.</li>
+          <li data-i18n="arch.client.li4">Auto‑update with signature and integrity verification.</li>
+        </ul>
+        <h3 data-i18n="arch.h3.relay">PHP Relay Server</h3>
+        <ul>
+          <li data-i18n="arch.relay.li1">Swoole‑based async HTTP/WebSocket server.</li>
+          <li data-i18n="arch.relay.li2">PostgreSQL for persistent storage, Redis for caching and queues.</li>
+          <li data-i18n="arch.relay.li3">Federation protocol with signed message envelopes.</li>
+          <li data-i18n="arch.relay.li4">Reputation and health monitoring endpoints.</li>
+        </ul>
+        <div class="callout callout-info">
+          <div class="callout-title" data-i18n="arch.callout.title">Separation of Concerns</div>
+          <p data-i18n="arch.callout.p">Each component has a single responsibility. Clients handle crypto and UI; relays route messages and store ciphertext; trust nodes manage identity and revocation; validators maintain the token ledger. This minimises attack surface.</p>
+        </div>
+      `,
+      'identity-auth': `
+        <div class="section-tag" data-i18n="identity.tag">Identity</div>
+        <h2 data-i18n="identity.title">Cryptographic Identity & Authentication</h2>
+        <p data-i18n="identity.p1">Every user has an Ed25519 identity key (nyx1... bech32). Devices are sub‑keys signed by the identity key. No email or OAuth required.</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th data-i18n="identity.table.key">Key Type</th><th data-i18n="identity.table.algorithm">Algorithm</th><th data-i18n="identity.table.lifetime">Lifetime</th><th data-i18n="identity.table.purpose">Purpose</th></tr></thead>
+            <tbody>
+              <tr><td data-i18n="identity.r1c1">Identity Key</td><td>Ed25519</td><td data-i18n="identity.r1c3">Long‑term</td><td data-i18n="identity.r1c4">Sign identity ops</td></tr>
+              <tr><td data-i18n="identity.r2c1">Device Key</td><td>Ed25519</td><td data-i18n="identity.r2c3">Per‑device</td><td data-i18n="identity.r2c4">Message signing</td></tr>
+              <tr><td data-i18n="identity.r3c1">Session Key</td><td>X25519</td><td data-i18n="identity.r3c3">Per‑session</td><td data-i18n="identity.r3c4">E2EE key agreement</td></tr>
+              <tr><td data-i18n="identity.r4c1">Prekey</td><td>X25519</td><td data-i18n="identity.r4c3">Until consumed</td><td data-i18n="identity.r4c4">Async X3DH</td></tr>
+              <tr><td data-i18n="identity.r5c1">Recovery Key</td><td>X25519 + AES‑256‑GCM</td><td data-i18n="identity.r5c3">User‑managed</td><td data-i18n="identity.r5c4">Encrypted backup</td></tr>
+            </tbody>
+          </table>
+        </div>
+      `,
+      e2ee: `
+        <div class="section-tag" data-i18n="e2ee.tag">Encryption</div>
+        <h2 data-i18n="e2ee.title">End‑to‑End Encryption (E2EE)</h2>
+        <p data-i18n="e2ee.p1">NYX uses the <strong>Signal Protocol</strong> (X3DH + Double Ratchet) for private DMs and groups. PQXDH (X‑Wing) is supported for post‑quantum resistance.</p>
+        <ul>
+          <li data-i18n="e2ee.li1"><strong>Forward Secrecy</strong>: each message uses a unique ratchet‑derived key.</li>
+          <li data-i18n="e2ee.li2"><strong>Post‑Compromise Security</strong>: continuous ratcheting recovers from key leaks.</li>
+          <li data-i18n="e2ee.li3"><strong>Authentication</strong>: messages are signed with the sender's device key.</li>
+          <li data-i18n="e2ee.li4"><strong>Replay Protection</strong>: sequence numbers and timestamps.</li>
+          <li data-i18n="e2ee.li5"><strong>Device Verification</strong>: safety numbers or QR codes.</li>
+        </ul>
+      `,
+      messaging: `
+        <div class="section-tag" data-i18n="messaging.tag">Messaging</div>
+        <h2 data-i18n="messaging.title">Message Model & Delivery</h2>
+        <p data-i18n="messaging.p1">Messages are structured envelopes with metadata, ciphertext, and signatures. Each conversation has a hash chain for tamper evidence.</p>
+        <pre><code><span class="cmt">// Message envelope</span>
+{
+  <span class="str">"message_id"</span>: <span class="str">"nyx_msg_..."</span>,
+  <span class="str">"sender_id"</span>:  <span class="str">"nyx1..."</span>,
+  <span class="str">"ciphertext"</span>: <span class="str">"base64..."</span>,
+  <span class="str">"signature"</span>:  <span class="str">"base64..."</span>,
+  <span class="str">"previous_hash"</span>: <span class="str">"blake3_..."</span>
+}</code></pre>
+        <h3 data-i18n="messaging.h3.types">Conversation Types</h3>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th data-i18n="messaging.table.type">Type</th><th data-i18n="messaging.table.enc">Encryption</th><th data-i18n="messaging.table.vis">Visibility</th></tr></thead>
+            <tbody>
+              <tr><td data-i18n="messaging.r1c1">Direct Message</td><td data-i18n="messaging.r1c2">E2EE (Double Ratchet)</td><td data-i18n="messaging.r1c3">Participants only</td></tr>
+              <tr><td data-i18n="messaging.r2c1">Private Group</td><td data-i18n="messaging.r2c2">E2EE (group ratchet)</td><td data-i18n="messaging.r2c3">Members only</td></tr>
+              <tr><td data-i18n="messaging.r3c1">Private Channel</td><td data-i18n="messaging.r3c2">E2EE (channel keys)</td><td data-i18n="messaging.r3c3">Members only</td></tr>
+              <tr><td data-i18n="messaging.r4c1">Public Channel</td><td data-i18n="messaging.r4c2">TLS only</td><td data-i18n="messaging.r4c3">Visible to all</td></tr>
+            </tbody>
+          </table>
+        </div>
+      `,
+      'relay-api': `
+        <div class="section-tag" data-i18n="api.tag">API</div>
+        <h2 data-i18n="api.title">Relay API (REST + WebSocket)</h2>
+        <p data-i18n="api.p1">All endpoints are versioned (<code>/api/v3/</code>). Authentication uses session tokens.</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th data-i18n="api.table.endpoint">Endpoint</th><th data-i18n="api.table.method">Method</th><th data-i18n="api.table.desc">Description</th></tr></thead>
+            <tbody>
+              <tr><td><code>/auth/register</code></td><td>POST</td><td data-i18n="api.r1c3">Register identity</td></tr>
+              <tr><td><code>/auth/session</code></td><td>POST</td><td data-i18n="api.r2c3">Establish session</td></tr>
+              <tr><td><code>/messages/send</code></td><td>POST</td><td data-i18n="api.r3c3">Send message</td></tr>
+              <tr><td><code>/messages/sync</code></td><td>GET</td><td data-i18n="api.r4c3">Sync (cursor)</td></tr>
+              <tr><td><code>/channels</code></td><td>GET/POST</td><td data-i18n="api.r5c3">List/create channels</td></tr>
+              <tr><td><code>/keys/prekey</code></td><td>GET/PUT</td><td data-i18n="api.r6c3">Prekey bundle ops</td></tr>
+              <tr><td><code>/federation/relay</code></td><td>POST</td><td data-i18n="api.r7c3">Inter‑relay forwarding</td></tr>
+              <tr><td><code>/trust/servers</code></td><td>GET</td><td data-i18n="api.r8c3">Trust/reputation</td></tr>
+              <tr><td><code>/updates/manifest</code></td><td>GET</td><td data-i18n="api.r9c3">Update manifest</td></tr>
+              <tr><td><code>/ledger/submit</code></td><td>POST</td><td data-i18n="api.r10c3">Token transaction</td></tr>
+              <tr><td><code>/health</code></td><td>GET</td><td data-i18n="api.r11c3">Health check</td></tr>
+            </tbody>
+          </table>
+        </div>
+      `,
+      federation: `
+        <div class="section-tag" data-i18n="fed.tag">Federation</div>
+        <h2 data-i18n="fed.title">Multi‑Relay Federation</h2>
+        <p data-i18n="fed.p1">Clients connect to multiple relays and select routes based on a composite score (latency, reputation, uptime, trust).</p>
+        <div class="diagram">Server selection score = w1*latency + w2*packet_loss + w3*uptime + w4*reputation + w5*capacity + w6*trust + ...</div>
+        <p data-i18n="fed.discovery">Server discovery uses bootstrap lists, local config, and dynamic endpoints with signed updates.</p>
+      `,
+      'trust-reputation': `
+        <div class="section-tag" data-i18n="trust.tag">Trust</div>
+        <h2 data-i18n="trust.title">Trust Architecture & Reputation</h2>
+        <p data-i18n="trust.p1">Trust levels: Unknown (0) → Registered (1) → Verified (2) → Trusted (3) → Authority (4). Admin servers use multi‑sig quorum.</p>
+        <p data-i18n="trust.rep">Reputation is computed from uptime, delivery reliability, integrity, validator attestations, health checks, historical behavior, and audits.</p>
+        <p data-i18n="trust.detection">Malicious behaviour (forged messages, modification, downtime, spam, integrity mismatch, fake identity) triggers reputation penalties and possible revocation.</p>
+      `,
+      integrity: `
+        <div class="section-tag" data-i18n="integrity.tag">Integrity</div>
+        <h2 data-i18n="integrity.title">Software Integrity & Merkle Trees</h2>
+        <p data-i18n="integrity.p1">NYX uses layered integrity: source‑tree, artifact, runtime, environment, and configuration. Each release has a signed manifest with file hashes and a Merkle root.</p>
+        <ul>
+          <li data-i18n="integrity.li1">Modified files (hash mismatch)</li>
+          <li data-i18n="integrity.li2">Missing or unexpected files</li>
+          <li data-i18n="integrity.li3">Modified PHP code (per‑file hash)</li>
+          <li data-i18n="integrity.li4">Downgraded versions (version constraint)</li>
+          <li data-i18n="integrity.li5">Unapproved plugins (signature verification)</li>
+        </ul>
+      `,
+      updates: `
+        <div class="section-tag" data-i18n="updates.tag">Updates</div>
+        <h2 data-i18n="updates.title">Auto‑Update System</h2>
+        <p data-i18n="updates.p1">Updates are signed with Ed25519. The client verifies the manifest, artifact hash, version constraints, and TLS transport. Rollback is automatic on health check failure.</p>
+        <p data-i18n="updates.chain">Offline root key → Release signing key → Signed manifest → Artifact download → Client verification.</p>
+      `,
+      deployment: `
+        <div class="section-tag" data-i18n="deploy.tag">Deployment</div>
+        <h2 data-i18n="deploy.title">Production Deployment</h2>
+        <p data-i18n="deploy.p1">NYX can be deployed at various scales. The required stack includes Linux, PHP 8.3+ with Swoole, PostgreSQL, Redis, Nginx/Caddy, Vault, Prometheus, and Grafana.</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th data-i18n="deploy.table.scale">Scale</th><th data-i18n="deploy.table.users">Users</th><th data-i18n="deploy.table.arch">Architecture</th></tr></thead>
+            <tbody>
+              <tr><td data-i18n="deploy.r1c1">Local Dev</td><td>~10</td><td data-i18n="deploy.r1c3">Docker Compose: PHP + PostgreSQL + Redis</td></tr>
+              <tr><td data-i18n="deploy.r2c1">Small</td><td>~1,000</td><td data-i18n="deploy.r2c3">3–5 relays, basic federation</td></tr>
+              <tr><td data-i18n="deploy.r3c1">Medium</td><td>~10,000</td><td data-i18n="deploy.r3c3">10–20 relays, geo‑distributed, read replicas</td></tr>
+              <tr><td data-i18n="deploy.r4c1">Large</td><td>~100,000</td><td data-i18n="deploy.r4c3">50+ relays, validator cluster, sharded DB</td></tr>
+              <tr><td data-i18n="deploy.r5c1">Massive</td><td>1,000,000+</td><td data-i18n="deploy.r5c3">Global federation, edge caching, full sharding</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p data-i18n="deploy.reqs">Production Requirements: Linux, PHP 8.3+ with Swoole, PostgreSQL 16+, Redis 7+, Nginx/Caddy, Vault, Prometheus, Grafana, structured JSON logging.</p>
+      `,
+      plugins: `
+        <div class="section-tag" data-i18n="plugins.tag">Plugins</div>
+        <h2 data-i18n="plugins.title">Plugin System</h2>
+        <p data-i18n="plugins.p1">Plugins are signed bundles with permission manifests. They run in a strict sandbox with limited capabilities.</p>
+        <p data-i18n="plugins.manifest">Manifest includes plugin_id, version, author, signature, permissions, sandbox level, and trust level.</p>
+        <pre><code><span class="cmt">// Plugin manifest example</span>
+{
+  <span class="str">"plugin_id"</span>: <span class="str">"my-plugin"</span>,
+  <span class="str">"version"</span>: <span class="str">"1.0.0"</span>,
+  <span class="str">"permissions"</span>: [<span class="str">"ui:panel"</span>],
+  <span class="str">"sandbox"</span>: <span class="str">"strict"</span>
+}</code></pre>
+      `,
+      'ai-assistant': `
+        <div class="section-tag" data-i18n="ai.tag">AI</div>
+        <h2 data-i18n="ai.title">Personal AI Assistant</h2>
+        <p data-i18n="ai.p1">Optional local/remote AI for coding, debugging, documentation, and diagnostics. Strict permission controls and sandboxing.</p>
+        <ul>
+          <li data-i18n="ai.li1">Explicit allow‑list for file, commands, network</li>
+          <li data-i18n="ai.li2">Prompt‑injection defense via input sanitisation</li>
+          <li data-i18n="ai.li3">Auto‑detection and redaction of secrets</li>
+          <li data-i18n="ai.li4">Isolated process with limited capabilities</li>
+          <li data-i18n="ai.li5">Dangerous commands require explicit confirmation</li>
+        </ul>
+      `,
+      'token-ledger': `
+        <div class="section-tag" data-i18n="token.tag">Token</div>
+        <h2 data-i18n="token.title">NYX Token & Distributed Ledger</h2>
+        <p data-i18n="token.p1">The NYX token is a utility credit for anti‑spam, relay rewards, governance, and reputation staking. The ledger uses committee‑based BFT consensus (not PoW).</p>
+        <ul>
+          <li data-i18n="token.li1"><strong>Transaction Fee</strong>: 0.01 NYX base + size‑based fee.</li>
+          <li data-i18n="token.li2"><strong>Fee Distribution</strong>: 60% validators, 30% relay operators, 10% burn.</li>
+          <li data-i18n="token.li3"><strong>Chat Messages</strong>: FREE (no token cost).</li>
+          <li data-i18n="token.li4"><strong>Consensus</strong>: Rotating committee of trusted validators, BFT with finality in <5 seconds.</li>
+        </ul>
+      `,
+      security: `
+        <div class="section-tag" data-i18n="security.tag">Security</div>
+        <h2 data-i18n="security.title">Security Model & Threat Mitigations</h2>
+        <p data-i18n="security.p1">Defence‑in‑depth. Main threats and mitigations:</p>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th data-i18n="security.table.actor">Threat Actor</th><th data-i18n="security.table.mitigation">Mitigation</th><th data-i18n="security.table.residual">Residual Risk</th></tr></thead>
+            <tbody>
+              <tr><td data-i18n="security.r1c1">Malicious user</td><td data-i18n="security.r1c2">Signatures, rate limits, abuse system</td><td data-i18n="security.r1c3">Low</td></tr>
+              <tr><td data-i18n="security.r2c1">Spammer</td><td data-i18n="security.r2c2">Anti‑Sybil, token costs</td><td data-i18n="security.r2c3">Medium</td></tr>
+              <tr><td data-i18n="security.r3c1">Compromised relay</td><td data-i18n="security.r3c2">Multi‑relay, E2EE, reputation</td><td data-i18n="security.r3c3">Medium</td></tr>
+              <tr><td data-i18n="security.r4c1">Compromised admin</td><td data-i18n="security.r4c2">Multi‑sig quorum, distributed keys</td><td data-i18n="security.r4c3">Low</td></tr>
+              <tr><td data-i18n="security.r5c1">MITM attacker</td><td data-i18n="security.r5c2">TLS + E2EE + cert pinning</td><td data-i18n="security.r5c3">Very low</td></tr>
+              <tr><td data-i18n="security.r6c1">Supply‑chain attacker</td><td data-i18n="security.r6c2">Signed releases, integrity verify</td><td data-i18n="security.r6c3">Medium</td></tr>
+              <tr><td data-i18n="security.r7c1">Network observer</td><td data-i18n="security.r7c2">Metadata minimization, relay indirection</td><td data-i18n="security.r7c3">Medium</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout callout-warn">
+          <div class="callout-title" data-i18n="security.callout.title">Honest Limitations</div>
+          <p data-i18n="security.callout.p">NYX cannot guarantee perfect anonymity, 100% availability, or protection against a compromised endpoint. The system is tamper‑evident, not tamper‑proof.</p>
+        </div>
+      `,
+      devtools: `
+        <div class="section-tag" data-i18n="devtools.tag">Developer</div>
+        <h2 data-i18n="devtools.title">Developer Features & Plugins</h2>
+        <p data-i18n="devtools.p1">NYX includes code snippets, Git integration, AI assistant, plugin system, and webhooks.</p>
+        <div class="card-grid">
+          <div class="card"><h4 data-i18n="devtools.card1.title">📋 Code Snippets</h4><p data-i18n="devtools.card1.desc">Syntax‑highlighted code blocks with language detection.</p></div>
+          <div class="card"><h4 data-i18n="devtools.card2.title">🔗 Git Integration</h4><p data-i18n="devtools.card2.desc">Status, branches, commit logs, and diffs.</p></div>
+          <div class="card"><h4 data-i18n="devtools.card3.title">🤖 AI Assistant</h4><p data-i18n="devtools.card3.desc">Local/remote AI for coding, debugging, and documentation.</p></div>
+          <div class="card"><h4 data-i18n="devtools.card4.title">🧩 Plugin System</h4><p data-i18n="devtools.card4.desc">Signed plugins with permission manifests and sandboxing.</p></div>
+          <div class="card"><h4 data-i18n="devtools.card5.title">📊 Webhooks</h4><p data-i18n="devtools.card5.desc">Incoming and outgoing webhooks for CI/CD and automation.</p></div>
+        </div>
+      `,
+      roadmap: `
+        <div class="section-tag" data-i18n="roadmap.tag">Roadmap</div>
+        <h2 data-i18n="roadmap.title">Development Roadmap</h2>
+        <div class="card-grid">
+          <div class="card"><span class="badge badge-mvp" data-i18n="roadmap.badge.mvp">MVP</span><h4 data-i18n="roadmap.phase1.title">Phase 1 – Core Messaging</h4><p data-i18n="roadmap.phase1.desc">Python client, PHP server, DMs, public channels, basic TUI.</p></div>
+          <div class="card"><span class="badge badge-future">Phase 2</span><h4 data-i18n="roadmap.phase2.title">Phase 2 – E2EE & Security</h4><p data-i18n="roadmap.phase2.desc">X3DH, Double Ratchet, multi‑device, security audit.</p></div>
+          <div class="card"><span class="badge badge-future">Phase 3</span><h4 data-i18n="roadmap.phase3.title">Phase 3 – Federation</h4><p data-i18n="roadmap.phase3.desc">Multi‑relay routing, discovery, cross‑server messaging.</p></div>
+          <div class="card"><span class="badge badge-future">Phase 4</span><h4 data-i18n="roadmap.phase4.title">Phase 4 – Integrity & Updates</h4><p data-i18n="roadmap.phase4.desc">Signed releases, Merkle trees, auto‑update with rollback.</p></div>
+          <div class="card"><span class="badge badge-future">Phase 5</span><h4 data-i18n="roadmap.phase5.title">Phase 5 – Reputation & Trust</h4><p data-i18n="roadmap.phase5.desc">Reputation system, malicious detection, revocation.</p></div>
+          <div class="card"><span class="badge badge-future">Phase 6</span><h4 data-i18n="roadmap.phase6.title">Phase 6 – Developer Platform</h4><p data-i18n="roadmap.phase6.desc">Git, plugins, webhooks, AI assistant.</p></div>
+          <div class="card"><span class="badge badge-future">Phase 7</span><h4 data-i18n="roadmap.phase7.title">Phase 7 – Token & Ledger</h4><p data-i18n="roadmap.phase7.desc">NYX token, BFT consensus, rewards.</p></div>
+          <div class="card"><span class="badge badge-future">Phase 8</span><h4 data-i18n="roadmap.phase8.title">Phase 8 – Advanced</h4><p data-i18n="roadmap.phase8.desc">AI scaling, governance, anti‑censorship, mobile.</p></div>
+        </div>
+      `,
+      faq: `
+        <div class="section-tag" data-i18n="faq.tag">FAQ</div>
+        <h2 data-i18n="faq.title">Frequently Asked Questions</h2>
+        <div style="margin:12px 0;">
+          <h4 data-i18n="faq.q1">Do I need an email to create an account?</h4>
+          <p data-i18n="faq.a1">No. NYX uses cryptographic identity keys. No email or third‑party OAuth is required.</p>
+          <h4 data-i18n="faq.q2">Is NYX fully decentralized?</h4>
+          <p data-i18n="faq.a2">NYX is federated, not fully decentralized. It uses a network of independent relays and trust nodes, but there is no global consensus for chat data — only for the token ledger.</p>
+          <h4 data-i18n="faq.q3">How does NYX handle spam?</h4>
+          <p data-i18n="faq.a3">NYX uses a combination of reputation systems, rate limiting, token costs for certain actions, and anti‑Sybil mechanisms like identity age and proof‑of‑service.</p>
+          <h4 data-i18n="faq.q4">Can I run my own relay?</h4>
+          <p data-i18n="faq.a4">Yes. NYX relays are open source and can be run by anyone. The relay will need to be registered and build reputation over time.</p>
+          <h4 data-i18n="faq.q5">What happens if my device is lost?</h4>
+          <p data-i18n="faq.a5">If you have a recovery key (BIP39 mnemonic), you can recover your identity on a new device. Without it, the identity is unrecoverable.</p>
+        </div>
+      `,
+      changelog: `
+        <div class="section-tag" data-i18n="changelog.tag">Changelog</div>
+        <h2 data-i18n="changelog.title">Release History</h2>
+        <div style="margin:12px 0;">
+          <h4 data-i18n="changelog.v3.1">v3.1.0 – 2025-03-15</h4>
+          <p data-i18n="changelog.v3.1.desc">Added PQXDH post‑quantum key agreement, improved federation routing, fixed memory leak in sync manager.</p>
+          <h4 data-i18n="changelog.v3.0">v3.0.0 – 2025-01-20</h4>
+          <p data-i18n="changelog.v3.0.desc">Major rewrite: new architecture, E2EE by default, token ledger, plugin system, AI assistant.</p>
+          <h4 data-i18n="changelog.v2.5">v2.5.0 – 2024-11-01</h4>
+          <p data-i18n="changelog.v2.5.desc">Added multi‑device support, improved terminal UI, initial reputation system.</p>
+          <h4 data-i18n="changelog.v2.0">v2.0.0 – 2024-08-15</h4>
+          <p data-i18n="changelog.v2.0.desc">First public beta: basic messaging, federation, CLI client.</p>
+        </div>
+      `,
+      appendices: `
+        <div class="section-tag" data-i18n="appendix.tag">Appendix</div>
+        <h2 data-i18n="appendix.title">Appendices</h2>
+        <h3 data-i18n="appendix.h3.a">A. Configuration Example (client)</h3>
+        <pre><code><span class="cmt"># ~/.config/nyx/config.toml</span>
+[identity]
+key_storage = "encrypted-sqlite"
+auto_lock_timeout = 300
+
+[network]
+default_server = "nyx://relay1.nyx.network"
+max_relays = 5
+
+[security]
+require_verified_relay = true</code></pre>
+        <h3 data-i18n="appendix.h3.b">B. CLI Commands Reference</h3>
+        <ul>
+          <li><code>/help</code> – Show help</li>
+          <li><code>/server switch &lt;relay&gt;</code> – Switch relay</li>
+          <li><code>/dm &lt;user&gt; &lt;msg&gt;</code> – Send DM</li>
+          <li><code>/join &lt;channel&gt;</code> – Join channel</li>
+          <li><code>/update check</code> – Check updates</li>
+          <li><code>/ai ask &lt;question&gt;</code> – Ask AI</li>
+        </ul>
+        <h3 data-i18n="appendix.h3.c">C. Cryptographic Inventory</h3>
+        <ul>
+          <li>Ed25519 – Identity & device signatures</li>
+          <li>X25519 – Key agreement (with X‑Wing PQ)</li>
+          <li>XChaCha20‑Poly1305 – Message encryption</li>
+          <li>BLAKE3 – Hashing & Merkle trees</li>
+          <li>HKDF‑SHA256 – Key derivation</li>
+          <li>TLS 1.3 – Transport security</li>
+        </ul>
+        <h3 data-i18n="appendix.h3.d">D. Glossary of Terms</h3>
+        <ul>
+          <li><strong>Relay</strong>: A server that routes messages between clients.</li>
+          <li><strong>Federation</strong>: Inter‑relay communication.</li>
+          <li><strong>E2EE</strong>: End‑to‑end encryption.</li>
+          <li><strong>BFT</strong>: Byzantine Fault Tolerance.</li>
+          <li><strong>PoW</strong>: Proof‑of‑Work (not used).</li>
+          <li><strong>Sybil</strong>: Attack where one entity creates many fake identities.</li>
+        </ul>
+      `
+    };
+
+    // Build sections in order
+    sectionsData.forEach(sec => {
+      const sectionDiv = document.createElement('section');
+      sectionDiv.id = 'section-' + sec.id;
+      sectionDiv.className = 'section';
+      sectionDiv.innerHTML = templates[sec.id] || '<p>Section content not found.</p>';
+      // Add copy buttons to pre blocks
+      sectionDiv.querySelectorAll('pre').forEach(pre => {
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = 'Copy';
+        btn.addEventListener('click', () => {
+          const code = pre.querySelector('code')?.textContent || pre.textContent;
+          navigator.clipboard.writeText(code).then(() => {
+            btn.textContent = '✓';
+            setTimeout(() => btn.textContent = 'Copy', 1500);
+          });
+        });
+        pre.appendChild(btn);
+      });
+      container.appendChild(sectionDiv);
+    });
+  }
+
+  // =============================================================
+  // 6. TRANSLATION APPLICATION
+  // =============================================================
+  function applyTranslations() {
+    const t = translations[currentLang]?.[currentLevel] || translations['en']['pro'];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (t[key] !== undefined) {
+        if (['P','H1','H2','H3','H4','LI','TD','TH','DIV','SPAN'].includes(el.tagName)) {
+          el.innerHTML = t[key];
+        } else {
+          el.textContent = t[key];
+        }
+      }
+    });
+    document.documentElement.lang = currentLang;
+    document.documentElement.dir = (currentLang === 'fa') ? 'rtl' : 'ltr';
+    document.getElementById('langToggle').textContent = (currentLang === 'fa') ? '🇮🇷 فارسی' : '🇬🇧 EN';
+    document.getElementById('levelToggle').textContent = (currentLevel === 'pro') ? '🔬 Pro' : '📘 Simple';
+    // Update search placeholder
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.placeholder = t['sidebar.search'] || 'Search...';
+    }
+  }
+
+  // =============================================================
+  // 7. THEME
+  // =============================================================
+  function applyTheme(theme) {
+    document.documentElement.className = 'theme-' + theme;
+    localStorage.setItem('nyxDocTheme', theme);
+    currentTheme = theme;
+  }
+
+  // =============================================================
+  // 8. SIDEBAR TOGGLE (mobile)
+  // =============================================================
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  // =============================================================
+  // 9. SEARCH
+  // =============================================================
+  function setupSearch() {
+    const input = document.getElementById('searchInput');
+    const navLinks = document.querySelectorAll('.sidebar-nav a');
+    input.addEventListener('input', function() {
+      const q = this.value.toLowerCase().trim();
+      navLinks.forEach(link => {
+        const text = link.textContent.toLowerCase();
+        const parent = link.parentElement;
+        if (q === '' || text.includes(q)) {
+          parent.style.display = '';
+        } else {
+          parent.style.display = 'none';
+        }
+      });
+      // Show/hide group labels
+      const groups = document.querySelectorAll('.section-group');
+      groups.forEach(group => {
+        let hasVisible = false;
+        let next = group.nextElementSibling;
+        while (next && !next.classList.contains('section-group')) {
+          if (next.style.display !== 'none') hasVisible = true;
+          next = next.nextElementSibling;
+        }
+        group.style.display = hasVisible ? '' : 'none';
+      });
+    });
+  }
+
+  // =============================================================
+  // 10. SCROLL PROGRESS
+  // =============================================================
+  function setupScrollProgress() {
+    const bar = document.getElementById('scrollProgress');
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      bar.style.width = progress + '%';
+      if (document.documentElement.dir === 'rtl') {
+        bar.style.left = 'auto';
+        bar.style.right = '0';
+      } else {
+        bar.style.left = '0';
+        bar.style.right = 'auto';
+      }
+    });
+  }
+
+  // =============================================================
+  // 11. TOGGLES (global)
+  // =============================================================
+  function toggleLanguage() {
+    currentLang = (currentLang === 'en') ? 'fa' : 'en';
+    localStorage.setItem('nyxDocLang', currentLang);
+    applyTranslations();
+  }
+  function toggleLevel() {
+    currentLevel = (currentLevel === 'pro') ? 'simple' : 'pro';
+    localStorage.setItem('nyxDocLevel', currentLevel);
+    applyTranslations();
+  }
+  function toggleTheme() {
+    const themes = ['dark', 'light', 'highcontrast', 'terminal'];
+    let idx = themes.indexOf(currentTheme);
+    idx = (idx + 1) % themes.length;
+    currentTheme = themes[idx];
+    applyTheme(currentTheme);
+  }
+
+  // =============================================================
+  // 12. INIT
+  // =============================================================
+  function init() {
+    buildNav();
+    buildContent();
+    applyTheme(currentTheme);
+    applyTranslations();
+    setupSearch();
+    setupScrollProgress();
+    // Close sidebar on outside click (mobile)
+    document.addEventListener('click', function(e) {
+      const sidebar = document.getElementById('sidebar');
+      if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+        if (!sidebar.contains(e.target) && !e.target.closest('.menu-toggle')) {
+          sidebar.classList.remove('open');
+        }
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  // Expose toggles
+  window.toggleLanguage = toggleLanguage;
+  window.toggleLevel = toggleLevel;
+  window.toggleTheme = toggleTheme;
+  window.toggleSidebar = toggleSidebar;
+
+  console.log('✅ NYX Professional Documentation loaded.');
+</script>
+</body>
+</html>

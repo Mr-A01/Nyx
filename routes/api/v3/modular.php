@@ -1,0 +1,150 @@
+<?php
+declare(strict_types=1);
+/** @var \Nyx\Core\Routing\Router $router */
+use Nyx\Modules\Administration\Presentation\Http\Controllers\OpsController;
+use Nyx\Modules\Messaging\Presentation\Http\Controllers\MessageController;
+use Nyx\Modules\Identity\Presentation\Http\Controllers\IdentityController;
+use Nyx\Modules\Devices\Presentation\Http\Controllers\DeviceController;
+use Nyx\Modules\Presence\Presentation\Http\Controllers\PresenceController;
+use Nyx\Modules\Federation\Presentation\Http\Controllers\FederationController;
+use Nyx\Modules\Conversations\Presentation\Http\Controllers\SpaceController;
+use Nyx\Modules\Crypto\Presentation\Http\Controllers\CryptoController;
+use Nyx\Modules\Attachments\Presentation\Http\Controllers\AttachmentController;
+use Nyx\Modules\Notifications\Presentation\Http\Controllers\PushController;
+use Nyx\Modules\Moderation\Presentation\Http\Controllers\ModerationController;
+use Nyx\Modules\Search\Presentation\Http\Controllers\SearchController;
+$ops=OpsController::class; $msg=MessageController::class; $id=IdentityController::class;
+$dev=DeviceController::class; $pres=PresenceController::class; $fed=FederationController::class;
+$space=SpaceController::class; $crypto=CryptoController::class; $att=AttachmentController::class;
+$push=PushController::class; $mod=ModerationController::class; $search=SearchController::class;
+$router->get('/', [$ops,'root']);
+$router->get('/api/v3/ops/info', [$ops,'info']);
+$router->get('/api/v3/ops/health', [$ops,'health']);
+$router->get('/api/v3/health', [$ops,'health']);
+$router->get('/api/v3/ops/selftest', [$ops,'selftest']);
+$router->get('/api/v3/ops/metrics', [$ops,'metrics']);
+$router->get('/api/v3/ops/network', [$ops,'network']);
+$router->get('/api/v3/health', [$ops,'health']);
+$router->post('/api/v3/messages/send', [$msg,'send']);
+$router->get('/api/v3/messages/sync', [$msg,'sync']);
+$router->post('/api/v3/messages/sync', [$msg,'sync']);
+$router->post('/api/v3/messages/edit', [$msg,'edit']);
+$router->post('/api/v3/messages/delete', [$msg,'delete']);
+$router->post('/api/v3/messages/clear', [$msg,'clear']);
+$router->post('/api/v3/messages/react', [$msg,'react']);
+$router->post('/api/v3/messages/pin', [$msg,'pin']);
+$router->post('/api/v3/messages/unpin', [$msg,'unpin']);
+$router->post('/api/v3/messages/receipt', [$msg,'receipt']);
+$router->get('/api/v3/messages/events', [$msg,'events']);
+$router->get('/api/v3/messages/read-state', [$msg,'readState']);
+$router->post('/api/v3/messages/mark-read', [$msg,'markRead']);
+$router->get('/api/v3/search/messages', [$search,'messages']);
+$router->get('/api/v3/auth/challenge', [$id,'challenge']);
+$router->post('/api/v3/auth/challenge', [$id,'challenge']);
+$router->post('/api/v3/auth/register', [$id,'register']);
+$router->post('/api/v1/auth/register', [$id,'register']);
+$router->post('/api/v3/auth/session', [$id,'session']);
+$router->post('/api/v1/auth/session', [$id,'session']);
+$router->post('/api/v3/auth/login', [$id,'login']);
+$router->post('/api/v1/auth/login', [$id,'login']);
+$router->get('/api/v1/identity/username', [$id,'usernameLookup']);
+$router->get('/api/v3/identity/username', [$id,'usernameLookup']);
+$router->post('/api/v3/devices/register', [$dev,'register']);
+$router->post('/api/v3/devices/touch', [$dev,'touch']);
+$router->post('/api/v3/devices/revoke', [$dev,'revoke']);
+$router->post('/api/v3/presence/heartbeat', [$pres,'heartbeat']);
+$router->post('/api/v3/presence/batch', [$pres,'batch']);
+$router->get('/api/v3/presence/batch', [$pres,'batch']);
+$router->post('/api/v3/presence/typing', [$pres,'typing']);
+$router->get('/api/v3/presence/typing', [$pres,'typingGet']);
+$router->get('/api/v3/federation/peers', [$fed,'peers']);
+$router->get('/api/v3/federation/topology', [$fed,'topology']);
+$router->post('/api/v3/federation/peers/register', [$fed,'registerPeer']);
+$router->post('/api/v3/federation/gossip', [$fed,'gossip']);
+$router->post('/api/v3/federation/heal', [$fed,'heal']);
+$router->post('/api/v3/spaces', [$space,'create']);
+$router->post('/api/v3/spaces/create', [$space,'create']);
+$router->post('/api/v3/spaces/join', [$space,'join']);
+$router->post('/api/v3/spaces/leave', [$space,'leave']);
+$router->post('/api/v3/spaces/kick', [$space,'kick']);
+$router->post('/api/v3/spaces/invite', [$space,'invite']);
+$router->get('/api/v3/spaces/mine', [$space,'mine']);
+$router->post('/api/v3/conversations/mute', [$space,'mute']);
+$router->post('/api/v3/conversations/pin', [$space,'pinConv']);
+$router->post('/api/v3/conversations/archive', [$space,'archive']);
+$router->post('/api/v3/conversations/clear', [$space,'clearHistory']);
+$router->post('/api/v3/conversations/delete', [$space,'deleteConversation']);
+$router->post('/api/v3/conversations/hide', [$space,'deleteConversation']);
+$router->post('/api/v3/crypto/prekeys', [$crypto,'publishPrekeys']);
+$router->get('/api/v3/crypto/prekeys', [$crypto,'fetchPrekeys']);
+$router->get('/api/v3/crypto/status', [$crypto,'status']);
+$router->put('/api/v3/keys/ecdh', [$crypto,'putEcdh']);
+$router->post('/api/v3/keys/ecdh', [$crypto,'putEcdh']);
+$router->get('/api/v3/keys/ecdh', [$crypto,'getEcdh']);
+$router->post('/api/v3/attachments/meta', [$att,'meta']);
+$router->post('/api/v3/attachments/upload', [$att,'upload']);
+$router->get('/api/v3/attachments/get', [$att,'get']);
+$router->post('/api/v3/push/subscribe', [$push,'subscribe']);
+$router->post('/api/v3/push/unsubscribe', [$push,'unsubscribe']);
+$router->get('/api/v3/push/prefs', [$push,'prefs']);
+$router->post('/api/v3/push/prefs', [$push,'prefs']);
+$router->post('/api/v3/moderation/report', [$mod,'report']);
+$router->post('/api/v3/moderation/block', [$mod,'block']);
+$router->post('/api/v3/moderation/unblock', [$mod,'unblock']);
+$router->get('/api/v3/moderation/blocks', [$mod,'listBlocks']);
+$router->get('/api/v3/events/poll', [$msg,'events']);
+
+$router->post('/api/v3/messages/forward',[$msg,'forward']);
+$router->post('/api/v3/dm', [$space,'openDm']);
+$router->post('/api/v3/dm/open', [$space,'openDm']);
+$router->get('/api/v3/conversations', [$space,'conversations']);
+$router->get('/api/v3/spaces/members', [$space,'members']);
+$router->post('/api/v3/spaces/members', [$space,'members']);
+$router->get('/api/v3/spaces/get', [$space,'get']);
+$router->post('/api/v3/spaces/update', [$space,'update']);
+$router->post('/api/v3/typing', [$pres,'typing']);
+$router->get('/api/v3/typing', [$pres,'typingGet']);
+$router->get('/api/v3/events/stream', [$msg,'stream']);
+$router->get('/api/v3/updates/wait', [$msg,'events']);
+$router->post('/api/v3/messages/read', [$msg,'markRead']);
+$router->post('/api/v3/receipts', [$msg,'receipt']);
+$router->get('/api/v3/search/users', [$search,'users']);
+$router->get('/api/v3/users/search', [$search,'users']);
+$router->post('/api/v3/uploads/raw', [$att,'uploadRaw']);
+$router->post('/api/v3/uploads', [$att,'upload']);
+$router->get('/api/v3/attachments/download', [$att,'download']);
+$router->get('/api/v3/uploads/{id}', [$att,'download']);
+
+// Aliases & soft endpoints (audit fixes)
+$router->get('/api/v3/typing', [$pres,'typingGet']);
+$router->post('/api/v3/typing', [$pres,'typing']);
+$router->get('/api/v3/search', [$search,'users']);
+$router->get('/api/v3/messages/search', [$search,'messages']);
+$router->get('/api/v3/search/global', [$search,'users']);
+$router->get('/api/v3/spaces/info', [$space,'get']);
+$router->get('/api/v3/spaces/get', [$space,'get']);
+$router->post('/api/v3/spaces/admin', function($r) {
+  return \Nyx\Shared\Infrastructure\Http\ApiEnvelope::ok(['ok' => true, 'actions' => ['list','kick','ban','promote','demote','update'], 'note' => 'use spaces/update and members endpoints']);
+});
+$router->get('/api/v3/spaces/admin', function($r) {
+  return \Nyx\Shared\Infrastructure\Http\ApiEnvelope::ok(['ok' => true, 'actions' => ['list','kick','ban','promote','demote','update']]);
+});
+$router->get('/api/v3/crypto/keys', [$crypto,'fetchPrekeys']);
+$router->post('/api/v3/crypto/keys', [$crypto,'publishPrekeys']);
+
+// Soft stubs & aliases (required by client bootstrap)
+$router->post('/api/v1/account/ensure-messaging', function() {
+  return \Nyx\Shared\Infrastructure\Http\ApiEnvelope::ok(['ok'=>true,'messaging'=>true]);
+});
+$router->get('/api/v1/account/ensure-messaging', function() {
+  return \Nyx\Shared\Infrastructure\Http\ApiEnvelope::ok(['ok'=>true,'messaging'=>true]);
+});
+$router->post('/api/v3/account/ensure-messaging', function() {
+  return \Nyx\Shared\Infrastructure\Http\ApiEnvelope::ok(['ok'=>true,'messaging'=>true]);
+});
+$router->get('/api/v3/spaces/discover', function() {
+  return \Nyx\Shared\Infrastructure\Http\ApiEnvelope::ok(['items'=>[],'spaces'=>[],'discover'=>[]]);
+});
+$router->get('/api/v3/discover', function() {
+  return \Nyx\Shared\Infrastructure\Http\ApiEnvelope::ok(['items'=>[],'spaces'=>[],'discover'=>[]]);
+});

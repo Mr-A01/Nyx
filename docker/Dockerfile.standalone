@@ -1,0 +1,11 @@
+# Single-container NYX (php built-in server — demos / small deploys)
+FROM php:8.3-cli-alpine
+RUN apk add --no-cache libsodium-dev sqlite-dev oniguruma-dev curl-dev $PHPIZE_DEPS \
+    && docker-php-ext-install pdo pdo_sqlite sodium mbstring curl \
+    && apk del $PHPIZE_DEPS
+WORKDIR /app
+COPY . /app
+RUN mkdir -p storage/data storage/logs storage/cache storage/uploads storage/tmp data \
+    && chmod -R 775 storage data
+EXPOSE 8080
+CMD ["php","-S","0.0.0.0:8080","-t","public"]

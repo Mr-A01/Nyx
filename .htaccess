@@ -1,0 +1,10 @@
+# NYX — point vhost document root to /public when possible.
+# If document root is this folder, rewrite into public/
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule ^(public)($|/) - [L]
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+RewriteRule ^ public/index.php [L]
+</IfModule>

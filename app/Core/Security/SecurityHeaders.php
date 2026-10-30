@@ -17,7 +17,19 @@ final class SecurityHeaders
         header('Cross-Origin-Resource-Policy: cross-origin');
         header('Cross-Origin-Opener-Policy: same-origin');
         header('X-XSS-Protection: 0');
-        // HSTS only when HTTPS
+        // Baseline CSP — allow self + required CDNs used by identity/status UIs
+        header(
+            "Content-Security-Policy: default-src 'self'; "
+            . "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
+            . "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            . "img-src 'self' data: blob:; "
+            . "font-src 'self' data: https://cdn.jsdelivr.net; "
+            . "connect-src 'self' https:; "
+            . "worker-src 'self' blob:; "
+            . "frame-ancestors 'none'; "
+            . "base-uri 'self'; "
+            . "form-action 'self'"
+        );
         $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || ((int)($_SERVER['SERVER_PORT'] ?? 0) === 443)
             || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');

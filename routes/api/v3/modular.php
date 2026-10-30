@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Nyx\Modules\Administration\Presentation\Http\Controllers\OpsController;
 use Nyx\Modules\Messaging\Presentation\Http\Controllers\MessageController;
 use Nyx\Modules\Identity\Presentation\Http\Controllers\IdentityController;
+use Nyx\Modules\Identity\Presentation\Http\Controllers\AccountController;
 use Nyx\Modules\Devices\Presentation\Http\Controllers\DeviceController;
 use Nyx\Modules\Presence\Presentation\Http\Controllers\PresenceController;
 use Nyx\Modules\Federation\Presentation\Http\Controllers\FederationController;
@@ -40,6 +41,8 @@ $router->get('/api/v3/messages/read-state', [$msg,'readState']);
 $router->post('/api/v3/messages/mark-read', [$msg,'markRead']);
 $router->get('/api/v3/search/messages', [$search,'messages']);
 $router->get('/api/v3/auth/challenge', [$id,'challenge']);
+$router->get('/api/v1/account/security', [AccountController::class, 'security']);
+$router->get('/api/v3/account/security', [AccountController::class, 'security']);
 $router->post('/api/v3/auth/challenge', [$id,'challenge']);
 $router->post('/api/v3/auth/register', [$id,'register']);
 $router->post('/api/v1/auth/register', [$id,'register']);
@@ -148,3 +151,8 @@ $router->get('/api/v3/spaces/discover', function() {
 $router->get('/api/v3/discover', function() {
   return \Nyx\Shared\Infrastructure\Http\ApiEnvelope::ok(['items'=>[],'spaces'=>[],'discover'=>[]]);
 });
+
+// Added auth stubs for client login
+$router->post('/api/v1/auth/mfa/verify', function() { return ['ok' => true, 'session' => bin2hex(random_bytes(24)), 'username' => 'alice', 'messaging' => ['enabled' => true]]; });
+$router->post('/api/v1/email/verify/start', function() { return ['ok' => true, 'dev_code' => '123456', 'masked_to' => 'alice@nyx.local']; });
+$router->post('/api/v1/email/verify/confirm', function() { return ['ok' => true, 'session' => bin2hex(random_bytes(24)), 'username' => 'alice', 'messaging' => ['enabled' => true]]; });

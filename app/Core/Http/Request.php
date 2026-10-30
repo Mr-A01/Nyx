@@ -50,6 +50,10 @@ final class Request
     {
         return $key === null ? $this->body : ($this->body[$key] ?? $default);
     }
+    public function json(string $key = null, mixed $default = null): mixed
+    {
+        return $this->input($key, $default);
+    }
     public function header(string $name, mixed $default = null): mixed
     {
         return $this->headers[$name] ?? $this->headers[str_replace('-', ' ', ucwords(strtolower(str_replace('-', ' ', $name))))] ?? $default;

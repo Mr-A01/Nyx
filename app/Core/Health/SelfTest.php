@@ -36,6 +36,11 @@ final class SelfTest
             || is_file($this->basePath . '/public/index.php');
         $tests['client'] = is_file($this->basePath . '/public/client.html');
         $tests['random'] = strlen(random_bytes(16)) === 16;
+        $attDir = (defined('DATA_DIR') ? DATA_DIR : ($this->basePath . '/data')) . '/attachments/blobs';
+        if (!is_dir($attDir)) {
+            @mkdir($attDir, 0750, true);
+        }
+        $tests['attachments_dir'] = is_dir($attDir) && is_writable($attDir);
 
         $pass = !in_array(false, $tests, true);
         return ['ok' => $pass, 'tests' => $tests];

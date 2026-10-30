@@ -26,7 +26,7 @@ final class SecurityHeaders
             . "font-src 'self' data: https://cdn.jsdelivr.net; "
             . "connect-src 'self' https:; "
             . "worker-src 'self' blob:; "
-            . "frame-ancestors 'none'; "
+            . "object-src 'none'; upgrade-insecure-requests; frame-ancestors 'none'; "
             . "base-uri 'self'; "
             . "form-action 'self'"
         );

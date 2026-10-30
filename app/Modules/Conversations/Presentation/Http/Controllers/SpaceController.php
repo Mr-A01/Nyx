@@ -159,6 +159,17 @@ final class SpaceController {
                 'space_id' => $sid, 'user_id' => $owner, 'role' => 'owner', 'joined_ms' => $now,
             ]);
         }
+        $invited = 0;
+        if (is_array($b['members'] ?? null)) {
+            $invited = count(array_filter($b['members'], static fn($m) => is_string($m) ? $m !== '' : !empty($m)));
+        } elseif (is_array($b['member_ids'] ?? null)) {
+            $invited = count($b['member_ids']);
+        }
+        $rec['member_count'] = 1 + max(0, $invited);
+        $rec['solo_owner'] = $invited === 0;
+        $rec['invite_hint'] = $invited === 0
+            ? 'You are the only member. Invite others from group settings when ready.'
+            : null;
         return ApiEnvelope::ok($rec);
     }
     public function resolveSpaceId(string $raw): string {

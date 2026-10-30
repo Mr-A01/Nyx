@@ -245,6 +245,38 @@ $router->get('/api/v3/spaces/discover', function() {
       } else {
         $mc = (int)($sp['member_count'] ?? 0);
       }
+      
+      $ownerId = strtolower((string)($sp['owner_id'] ?? ''));
+      $ownerUsername = '';
+      $ownerDisplay = '';
+      if ($ownerId !== '') {
+        $urow = $store->get("users/{$ownerId}.json");
+        if (!is_array($urow)) {
+          $urow = $store->get("identity/usernames/{$ownerId}.json");
+        }
+        if (is_array($urow)) {
+          $ownerUsername = (string)($urow['username'] ?? '');
+          $ownerDisplay = (string)($urow['display_name'] ?? $urow['displayName'] ?? $ownerUsername);
+          if ($ownerUsername === '' && !empty($urow['user_id'])) {
+            $uid = (string)$urow['user_id'];
+            $byId = $store->get("users/{$uid}.json");
+            if (is_array($byId)) {
+              $ownerUsername = (string)($byId['username'] ?? '');
+              $ownerDisplay = (string)($byId['display_name'] ?? $byId['displayName'] ?? $ownerUsername);
+            }
+          }
+        }
+        if ($ownerUsername === '') {
+          // owner_id may already be a username
+          $ownerUsername = preg_match('/^[a-z0-9_]{3,32}$/', $ownerId) ? $ownerId : '';
+          $ownerDisplay = $ownerUsername !== '' ? $ownerUsername : 'community';
+        }
+      }
+      if ($ownerUsername === '') {
+        $ownerUsername = 'community';
+        $ownerDisplay = 'Community';
+      }
+
       $items[] = [
         'id' => $sid, 'space_id' => $sid,
         'name' => (string)($sp['name'] ?? $sid),
@@ -253,6 +285,11 @@ $router->get('/api/v3/spaces/discover', function() {
         'member_count' => $mc,
         'memberCount' => $mc,
         'description' => (string)($sp['description'] ?? ''),
+        'owner_id' => $ownerId,
+        'owner_username' => $ownerUsername,
+        'owner_display' => $ownerDisplay,
+        'owner' => $ownerUsername,
+        'created_by' => $ownerUsername,
       ];
     }
   }
@@ -280,6 +317,38 @@ $router->get('/api/v3/discover', function() {
       } else {
         $mc = (int)($sp['member_count'] ?? 0);
       }
+      
+      $ownerId = strtolower((string)($sp['owner_id'] ?? ''));
+      $ownerUsername = '';
+      $ownerDisplay = '';
+      if ($ownerId !== '') {
+        $urow = $store->get("users/{$ownerId}.json");
+        if (!is_array($urow)) {
+          $urow = $store->get("identity/usernames/{$ownerId}.json");
+        }
+        if (is_array($urow)) {
+          $ownerUsername = (string)($urow['username'] ?? '');
+          $ownerDisplay = (string)($urow['display_name'] ?? $urow['displayName'] ?? $ownerUsername);
+          if ($ownerUsername === '' && !empty($urow['user_id'])) {
+            $uid = (string)$urow['user_id'];
+            $byId = $store->get("users/{$uid}.json");
+            if (is_array($byId)) {
+              $ownerUsername = (string)($byId['username'] ?? '');
+              $ownerDisplay = (string)($byId['display_name'] ?? $byId['displayName'] ?? $ownerUsername);
+            }
+          }
+        }
+        if ($ownerUsername === '') {
+          // owner_id may already be a username
+          $ownerUsername = preg_match('/^[a-z0-9_]{3,32}$/', $ownerId) ? $ownerId : '';
+          $ownerDisplay = $ownerUsername !== '' ? $ownerUsername : 'community';
+        }
+      }
+      if ($ownerUsername === '') {
+        $ownerUsername = 'community';
+        $ownerDisplay = 'Community';
+      }
+
       $items[] = [
         'id' => $sid, 'space_id' => $sid,
         'name' => (string)($sp['name'] ?? $sid),
@@ -288,6 +357,11 @@ $router->get('/api/v3/discover', function() {
         'member_count' => $mc,
         'memberCount' => $mc,
         'description' => (string)($sp['description'] ?? ''),
+        'owner_id' => $ownerId,
+        'owner_username' => $ownerUsername,
+        'owner_display' => $ownerDisplay,
+        'owner' => $ownerUsername,
+        'created_by' => $ownerUsername,
       ];
     }
   }

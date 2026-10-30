@@ -1,9 +1,13 @@
-# NYX public document root
-<IfModule mod_rewrite.c>
 RewriteEngine On
+DirectoryIndex index.html index.php
+
+# WebSocket gateway (must not go through index.php front controller)
+RewriteRule ^ws$ ws.php [L,QSA]
+RewriteRule ^ws/$ ws.php [L,QSA]
+
+# Existing files/dirs as-is
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
+
 RewriteRule ^ index.php [L]
-</IfModule>
-DirectoryIndex index.html index.php

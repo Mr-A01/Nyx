@@ -1,0 +1,36 @@
+# NYX Relay — single-node compose
+# Usage (from repo root):
+#   docker compose -f docker/docker-compose.yml up -d --build
+# Then open: http://localhost:8080/install/
+
+services:
+  nyx:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: nyx-relay:1.45
+    container_name: nyx-relay
+    ports:
+      - "8080:80"
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      # Optional overrides; wizard still writes .env on first run
+      NYX_PROTOCOL: "3"
+    volumes:
+      # Persist messages, users, sqlite, install.lock
+      - nyx_data:/var/www/nyx/data
+      - nyx_storage:/var/www/nyx/storage
+      # Uncomment to inject host .env
+      # - ../.env:/var/www/nyx/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1/api/v3/ops/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+volumes:
+  nyx_data:
+  nyx_storage:

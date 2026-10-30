@@ -401,31 +401,55 @@ final class SpaceController {
         return ApiEnvelope::ok($rec);
     }
     public function mine(Request $r): JsonResponse {
-        $uid = AuthContext::userId($r);
+        $uid = strtolower(trim(AuthContext::userId($r)));
         if ($uid === '') return ApiEnvelope::error('user_id required', 422);
         $store = $this->store();
+        // Resolve username -> canonical user_id when session carries username
+        $urow = $store->get("users/{$uid}.json");
+        if (!is_array($urow)) $urow = $store->get("identity/usernames/{$uid}.json");
+        if (is_array($urow) && !empty($urow['user_id'])) {
+            $uid = strtolower((string)$urow['user_id']);
+        }
         $spaces = [];
         $root = $store->root() . '/memberships';
         if (is_dir($root)) foreach (glob($root . '/*', GLOB_ONLYDIR) ?: [] as $dir) {
             $sid = basename($dir);
-            if (is_file($dir . '/' . $uid . '.json')) {
-                $sp = $store->get("spaces/{$sid}.json") ?? ['space_id' => $sid, 'id' => $sid];
-                $sp['id'] = $sp['id'] ?? $sid;
-                $sp['space_id'] = $sp['space_id'] ?? $sid;
-                $mcount = 0;
-                $mdir = $store->root() . '/memberships/' . $sid;
-                if (is_dir($mdir)) $mcount = count(glob($mdir . '/*.json') ?: []);
-                $sp['member_count'] = $mcount;
-                $sp['memberCount'] = $mcount;
-                if (empty($sp['member_ids']) && $mcount > 0) {
-                    $ids = [];
-                    foreach (glob($mdir . '/*.json') ?: [] as $mf) $ids[] = basename($mf, '.json');
-                    $sp['member_ids'] = $ids;
-                    $sp['memberIds'] = $ids;
-                    $sp['members'] = $ids;
-                }
-                $spaces[] = $sp;
+            if (!is_file($dir . '/' . $uid . '.json')) continue;
+            $sp = $store->get("spaces/{$sid}.json") ?? ['space_id' => $sid, 'id' => $sid];
+            $sp['id'] = $sp['id'] ?? $sid;
+            $sp['space_id'] = $sp['space_id'] ?? $sid;
+            $mcount = 0;
+            $mdir = $store->root() . '/memberships/' . $sid;
+            $ids = [];
+            if (is_dir($mdir)) {
+                foreach (glob($mdir . '/*.json') ?: [] as $mf) $ids[] = basename($mf, '.json');
+                $mcount = count($ids);
             }
+            $sp['member_count'] = $mcount;
+            $sp['memberCount'] = $mcount;
+            $sp['member_ids'] = $ids ?: ($sp['member_ids'] ?? $sp['memberIds'] ?? $sp['members'] ?? []);
+            $sp['memberIds'] = $sp['member_ids'];
+            $sp['members'] = $sp['member_ids'];
+            // Per-viewer DM title: never show self as conversation name
+            $type = strtolower((string)($sp['type'] ?? ''));
+            if ($type === 'dm' || str_starts_with($sid, 'dm_')) {
+                $sp['type'] = 'dm';
+                $peer = '';
+                foreach ($sp['member_ids'] as $mid) {
+                    if (strtolower((string)$mid) !== $uid) { $peer = strtolower((string)$mid); break; }
+                }
+                if ($peer !== '') {
+                    $prow = $store->get("users/{$peer}.json");
+                    $pname = is_array($prow)
+                        ? (string)($prow['display_name'] ?? $prow['username'] ?? $peer)
+                        : $peer;
+                    $sp['peer'] = $peer;
+                    $sp['peer_id'] = $peer;
+                    $sp['peer_display'] = $pname;
+                    $sp['name'] = $pname;
+                }
+            }
+            $spaces[] = $sp;
         }
         return ApiEnvelope::ok(['spaces' => $spaces, 'count' => count($spaces)]);
     }
@@ -658,7 +682,8 @@ public function openDm(Request $r): JsonResponse {
                 'space_id' => $sid,
                 'id' => $sid,
                 'type' => 'dm',
-                'name' => $peerInfo['name'],
+                // Neutral stored name — per-viewer title is computed on read
+                'name' => 'Direct message',
                 'owner_id' => $me,
                 'members' => [$me, $peer],
                 'member_ids' => [$me, $peer],
@@ -669,18 +694,25 @@ public function openDm(Request $r): JsonResponse {
         }
         // memberships — always use canonical ids (idempotent)
         foreach ([$me, $peer] as $uid) {
-            $store->put('memberships/' . $sid . '/' . $uid . '.json', [
-                'space_id' => $sid,
-                'user_id' => $uid,
-                'role' => 'member',
-                'joined_ms' => (int)(microtime(true) * 1000),
-            ]);
+            $mp = 'memberships/' . $sid . '/' . $uid . '.json';
+            if (!is_array($store->get($mp))) {
+                $store->put($mp, [
+                    'space_id' => $sid,
+                    'user_id' => $uid,
+                    'role' => 'member',
+                    'joined_ms' => (int)(microtime(true) * 1000),
+                ]);
+            }
         }
         $existing['id'] = $sid;
         $existing['conversation_id'] = $sid;
         $existing['space_id'] = $sid;
+        $existing['type'] = 'dm';
+        // Always return peer relative to the caller
         $existing['peer'] = $peer;
-        $existing['peer_display'] = $peerInfo['name'];
+        $existing['peer_id'] = $peer;
+        $existing['peer_display'] = $peerInfo['name'] !== '' ? $peerInfo['name'] : $peer;
+        $existing['name'] = $existing['peer_display'];
         $existing['memberIds'] = [$me, $peer];
         $existing['member_ids'] = [$me, $peer];
         $existing['members'] = [$me, $peer];
@@ -720,6 +752,28 @@ public function openDm(Request $r): JsonResponse {
         $sp['member_count'] = count($mids);
         $sp['memberCount'] = count($mids);
         $store->put("spaces/{$sid}.json", $sp);
+        // Server-side notification for the added member
+        try {
+            $nid = bin2hex(random_bytes(8));
+            $nrec = $store->get("notifications/{$uid}.json");
+            if (!is_array($nrec)) $nrec = ['user_id' => $uid, 'items' => []];
+            $items = is_array($nrec['items'] ?? null) ? $nrec['items'] : [];
+            array_unshift($items, [
+                'id' => $nid,
+                'user_id' => $uid,
+                'kind' => 'system',
+                'title' => 'Added to group',
+                'desc' => (string)($sp['name'] ?? $sid),
+                'space_id' => $sid,
+                'conv_id' => $sid,
+                'ts' => ApiEnvelope::nowMs(),
+                'read' => false,
+            ]);
+            if (count($items) > 100) $items = array_slice($items, 0, 100);
+            $nrec['items'] = $items;
+            $nrec['updated_ms'] = ApiEnvelope::nowMs();
+            $store->put("notifications/{$uid}.json", $nrec);
+        } catch (\Throwable $e) {}
         return ApiEnvelope::ok([
             'space_id' => $sid, 'user_id' => $uid, 'display_name' => $dname,
             'role' => 'member', 'joined_ms' => ApiEnvelope::nowMs(),

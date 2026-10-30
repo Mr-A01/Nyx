@@ -1,10 +1,26 @@
-# NYX — point vhost document root to /public when possible.
-# If document root is this folder, rewrite into public/
-<IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteRule ^(public)($|/) - [L]
+RewriteBase /nyx/
+DirectoryIndex index.html index.php
+
+# Deny sensitive / packaging / legacy trees
+RewriteRule ^(data|config|app|storage|legacy|bootstrap|routes|tools|docs|nyx-relay-package|vendor)(/|$) - [F,L]
+RewriteRule \.(env|sqlite|pem|log|sql|bak|swp|zip|tar|gz)$ - [F,L]
+RewriteRule ^_[^/]+\.(php|js)$ - [F,L]
+RewriteRule ^(pack_release|update_channel)\.php$ - [F,L]
+
+RewriteRule ^ws/?$ public/ws.php [L,QSA]
+
+# Canonical UI under public/
+RewriteRule ^(client|home|identity|status|landing|messenger)\.html$ public/$1.html [L]
+RewriteRule ^install/?$ public/install/index.php [L]
+RewriteRule ^install/(.*)$ public/install/$1 [L]
+RewriteRule ^sw\.js$ public/sw.js [L]
+RewriteRule ^update_listener\.js$ public/update_listener.js [L]
+RewriteRule ^robots\.txt$ public/robots.txt [L]
+RewriteRule ^assets/(.*)$ assets/$1 [L]
+
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
+
 RewriteRule ^ public/index.php [L]
-</IfModule>

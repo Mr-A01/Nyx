@@ -43,10 +43,13 @@ final class PushController {
     /** In-app notification feed (membership, mentions, system). */
     public function list(Request $r): JsonResponse {
         $b = $r->json() ?? [];
-        $uid = AuthContext::userId($r, $b);
-        if ($uid === '') $uid = (string)($b['user_id'] ?? $r->query('user_id') ?? '');
+        $uid = strtolower(trim(AuthContext::userId($r, $b)));
+        if ($uid === '') $uid = strtolower(trim((string)($b['user_id'] ?? $r->query('user_id') ?? '')));
         if ($uid === '') return ApiEnvelope::error('user_id required', 422);
         $s = $this->store();
+        $row = $s->get("users/{$uid}.json");
+        if (!is_array($row)) $row = $s->get("identity/usernames/{$uid}.json");
+        if (is_array($row) && !empty($row['user_id'])) $uid = strtolower((string)$row['user_id']);
         $items = [];
         $rec = $s->get("notifications/{$uid}.json");
         if (is_array($rec) && is_array($rec['items'] ?? null)) {
@@ -62,10 +65,13 @@ final class PushController {
     }
     public function markRead(Request $r): JsonResponse {
         $b = $r->json() ?? [];
-        $uid = AuthContext::userId($r, $b);
-        if ($uid === '') $uid = (string)($b['user_id'] ?? '');
+        $uid = strtolower(trim(AuthContext::userId($r, $b)));
+        if ($uid === '') $uid = strtolower(trim((string)($b['user_id'] ?? '')));
         if ($uid === '') return ApiEnvelope::error('user_id required', 422);
         $s = $this->store();
+        $row = $s->get("users/{$uid}.json");
+        if (!is_array($row)) $row = $s->get("identity/usernames/{$uid}.json");
+        if (is_array($row) && !empty($row['user_id'])) $uid = strtolower((string)$row['user_id']);
         $rec = $s->get("notifications/{$uid}.json");
         if (!is_array($rec)) $rec = ['user_id' => $uid, 'items' => []];
         $id = (string)($b['id'] ?? '');

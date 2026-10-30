@@ -4532,6 +4532,9 @@ if (modalLastFocus && modalLastFocus.focus && document.contains(modalLastFocus))
 modalLastFocus = null;
 if (cb) cb();
 }
+/*nyx-export-modals*/
+try { window.closeModal = closeModal; window.openModal = openModal; } catch (e) {}
+
 function confirmModal(title, body, label = 'Confirm', danger = false) {
 return new Promise(res => {
 let done = false;

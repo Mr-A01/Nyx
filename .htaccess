@@ -1,6 +1,6 @@
 RewriteEngine On
 RewriteBase /nyx/
-DirectoryIndex index.html index.php
+DirectoryIndex index.php
 
 # Deny sensitive / packaging / legacy trees
 RewriteRule ^(data|config|app|storage|legacy|bootstrap|routes|tools|docs|nyx-relay-package|vendor)(/|$) - [F,L]

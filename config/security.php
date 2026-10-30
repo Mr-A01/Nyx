@@ -10,7 +10,7 @@ return [
     ],
     'auth' => [
         'session_ttl_days' => 14,
-        'min_password_length' => 12,
+        'min_password_length' => 15,
         'login_max_attempts' => 8,
         'login_window_sec' => 300,
         'register_max_attempts' => 5,

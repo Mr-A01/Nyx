@@ -4505,6 +4505,8 @@ function closePopover() { popEl.classList.remove('on'); popEl.innerHTML = ''; }
 document.addEventListener('pointerdown', e => { if (popEl.classList.contains('on') && !popEl.contains(e.target)) closePopover(); }, true);
 let modalCb = null, modalLastFocus = null;
 function openModal(html, { wide = false, onClose = null, dismissible = true } = {}) {
+/*nyx-modal-globals*/
+try { window.openModal = openModal; if (typeof closeModal === "function") window.closeModal = closeModal; } catch (e) {}
 const ov = $('#modal-ov'), m = $('#modal');
 modalLastFocus = document.activeElement;
 m.className = 'modal' + (wide ? ' wide' : '');
@@ -6558,7 +6560,7 @@ function openProfileCard() {
     <div class="mrow">
       <button class="btn sm" id="pc-copy">Copy link</button>
       <button class="btn sm" id="pc-share">Share text</button>
-      <button class="btn pri" onclick="closeModal()">Close</button>
+      <button class="btn pri" onclick="(window.closeModal||function(){})()">Close</button>
     </div>`);
   $('#pc-copy').onclick = async () => { try { await navigator.clipboard.writeText(qr); toast('Copied', '', 'ok'); } catch(e){} };
   $('#pc-share').onclick = async () => {
@@ -6575,7 +6577,7 @@ function openShortcutsHelp() {
     <div class="kv"><span class="k">Ctrl/⌘ Shift L</span><span class="v">Lock chats (PIN)</span></div>
     <div class="kv"><span class="k">Ctrl/⌘ ,</span><span class="v">Settings</span></div>
     <div class="kv"><span class="k">/</span><span class="v">Focus composer (in chat)</span></div>
-    <div class="mrow"><button class="btn pri" onclick="closeModal()">Close</button></div>`);
+    <div class="mrow"><button class="btn pri" onclick="(window.closeModal||function(){})()">Close</button></div>`);
 }
 
 // Screenshot protection soft
@@ -7097,7 +7099,7 @@ const NyxInteract = {
         <span class="v" style="flex:1"><strong>${users.length}</strong> · ${names.map(n => esc(n)).join(', ')}</span>
       </div>`;
     }).join('') || '<div class="hint">No reactions yet</div>';
-    openModal(`<h2>Reactions</h2><div style="max-height:50vh;overflow:auto">${rows}</div><div class="mrow"><button class="btn pri" onclick="closeModal()">Close</button></div>`);
+    openModal(`<h2>Reactions</h2><div style="max-height:50vh;overflow:auto">${rows}</div><div class="mrow"><button class="btn pri" onclick="(window.closeModal||function(){})()">Close</button></div>`);
   },
 };
 
@@ -7147,7 +7149,7 @@ function bindMediaSuite(root, conv) {
       rec.lang = (prefs && prefs.lang === 'fa') ? 'fa-IR' : 'en-US';
       rec.onresult = (ev) => {
         const text = ev.results[0][0].transcript;
-        openModal(`<h2>Transcription</h2><div style="white-space:pre-wrap">${esc(text)}</div><div class="mrow"><button class="btn pri" onclick="closeModal()">Close</button></div>`);
+        openModal(`<h2>Transcription</h2><div style="white-space:pre-wrap">${esc(text)}</div><div class="mrow"><button class="btn pri" onclick="(window.closeModal||function(){})()">Close</button></div>`);
       };
       rec.onerror = () => toast('Transcription failed', '', 'warn');
       rec.start();
@@ -8412,7 +8414,7 @@ if (tBtn) tBtn.onclick = () => {
         <button type="button" data-ms="28800000">8 hours</button>
         <button type="button" data-ms="0">Forever</button>
         <button type="button" data-ms="-1">Unmute</button>
-      </div><div class="mrow"><button class="btn" onclick="closeModal()">Close</button></div>`);
+      </div><div class="mrow"><button class="btn" onclick="(window.closeModal||function(){})()">Close</button></div>`);
       $$('#mu-seg button', m2).forEach(b => b.onclick = () => {
         const ms = Number(b.dataset.ms);
         if (ms < 0) NyxPrivacy.setChatPriv(conv.id, { muteUntil: 0 });
@@ -8439,7 +8441,7 @@ if (tBtn) tBtn.onclick = () => {
     } },
     { label: 'Add to folder…', action: () => {
       const folders = NyxOrg.folders();
-      const m2 = openModal(`<h2>Folders</h2>${folders.map(f=>`<button class="btn" data-f="${esc(f.id)}" style="display:block;width:100%;margin:4px 0">${esc(f.name)}</button>`).join('')}<div class="mrow"><button class="btn" onclick="closeModal()">Close</button></div>`);
+      const m2 = openModal(`<h2>Folders</h2>${folders.map(f=>`<button class="btn" data-f="${esc(f.id)}" style="display:block;width:100%;margin:4px 0">${esc(f.name)}</button>`).join('')}<div class="mrow"><button class="btn" onclick="(window.closeModal||function(){})()">Close</button></div>`);
       $$('[data-f]', m2).forEach(b => b.onclick = () => {
         const folders = NyxOrg.folders();
         const f = folders.find(x => x.id === b.dataset.f);
@@ -8457,7 +8459,7 @@ if (tBtn) tBtn.onclick = () => {
     { label: 'Safety number', action: () => {
       const peer = (conv.memberIds||[]).find(id => id !== ACCOUNT_ID) || '';
       const sn = NyxPrivacy.safetyNumber(ACCOUNT_ID, peer || conv.id);
-      openModal(`<h2>Safety number</h2><p class="mdesc">Verify with your contact out-of-band.</p><div class="mono" style="font-size:18px;letter-spacing:2px">${esc(sn)}</div><div class="mrow"><button class="btn pri" onclick="closeModal()">Close</button></div>`);
+      openModal(`<h2>Safety number</h2><p class="mdesc">Verify with your contact out-of-band.</p><div class="mono" style="font-size:18px;letter-spacing:2px">${esc(sn)}</div><div class="mrow"><button class="btn pri" onclick="(window.closeModal||function(){})()">Close</button></div>`);
     } },
     { label: 'Report user…', action: () => {
       const peer = (conv.memberIds||[]).find(id => id !== ACCOUNT_ID);
@@ -10609,7 +10611,7 @@ if (tfa) tfa.onclick = () => {
 const tfb = $('#st-2fa-backup', root);
 if (tfb) tfb.onclick = () => {
   const codes = Array.from({length:8}, (_,i)=> Math.random().toString(36).slice(2,6).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase());
-  openModal(`<h2>Backup codes</h2><p class="mdesc">Store these offline. Each code works once.</p><pre style="white-space:pre-wrap;font-size:12px">${codes.join('\n')}</pre><div class="mrow"><button class="btn pri" onclick="closeModal()">Done</button></div>`);
+  openModal(`<h2>Backup codes</h2><p class="mdesc">Store these offline. Each code works once.</p><pre style="white-space:pre-wrap;font-size:12px">${codes.join('\n')}</pre><div class="mrow"><button class="btn pri" onclick="(window.closeModal||function(){})()">Done</button></div>`);
 };
 
 const acs = $('#accent-seg', root); if (acs) $$('[data-accent]', acs).forEach(b => b.onclick = () => { prefs.accent = b.dataset.accent; savePrefs(); renderMain(); });

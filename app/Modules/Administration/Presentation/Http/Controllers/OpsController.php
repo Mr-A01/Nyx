@@ -2,9 +2,11 @@
 declare(strict_types=1);
 namespace Nyx\Modules\Administration\Presentation\Http\Controllers;
 use Nyx\Core\Http\Request; use Nyx\Core\Http\JsonResponse;
-use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 final class OpsController {
+    public static function nowMs(): int {
+        return (int)round(microtime(true)*1000);
+    }
     private static function geo(string $host): array {
         static $map = [
             'acebet90.co'=>['city'=>'Istanbul','country'=>'TR','lat'=>41.01,'lng'=>28.97],
@@ -25,7 +27,7 @@ final class OpsController {
         if(function_exists('curl_init')){
             foreach([$base.'/?json=1',$base.'/api/v3/ops/selftest',$base.'/'] as $probe){
                 $ch=curl_init($probe);
-                curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>5,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_FOLLOWLOCATION=>true,CURLOPT_HTTPHEADER=>['Accept: application/json','User-Agent: NYX-MeshProbe/1.44']]);
+                curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>5,CURLOPT_CONNECTTIMEOUT=>3,CURLOPT_FOLLOWLOCATION=>true,CURLOPT_HTTPHEADER=>['Accept: application/json','User-Agent: NYX-MeshProbe/1.45']]);
                 curl_exec($ch); $code=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE); curl_close($ch);
                 if($code>=200&&$code<500){ $ok=true; break; }
             }
@@ -52,14 +54,14 @@ final class OpsController {
             'uptime_24h'=>$isSelf||$ok?99.5:0.0,'uptime_7d'=>$isSelf||$ok?99.2:0.0,'uptime_30d'=>$isSelf||$ok?99.0:0.0,
             'incidents_30d'=>$ok||$isSelf?0:1,
             'is_self'=>$isSelf,'protocol_version'=>'3',
-            'software_version'=>defined('NYX_VERSION')?NYX_VERSION:'1.44.0-modular',
+            'software_version'=>defined('NYX_VERSION')?NYX_VERSION:'1.45.0-modular',
         ];
     }
     public function root(Request $r): JsonResponse {
-        return ApiEnvelope::ok(['service'=>'nyx-relay','version'=>defined('NYX_VERSION')?NYX_VERSION:'1.44.0-modular','protocol'=>3,'host'=>$_SERVER['HTTP_HOST']??'localhost','time_ms'=>ApiEnvelope::nowMs(),'status'=>'ok']);
+        return JsonResponse::ok(['service'=>'nyx-relay','version'=>defined('NYX_VERSION')?NYX_VERSION:'1.45.0-modular','protocol'=>3,'host'=>$_SERVER['HTTP_HOST']??'localhost','time_ms'=>self::nowMs(),'status'=>'ok']);
     }
     public function info(Request $r): JsonResponse {
-        return ApiEnvelope::ok(['service'=>'nyx-relay','version'=>defined('NYX_VERSION')?NYX_VERSION:'1.44.0-modular','protocol'=>3,'architecture'=>'app-modules']);
+        return JsonResponse::ok(['service'=>'nyx-relay','version'=>defined('NYX_VERSION')?NYX_VERSION:'1.45.0-modular','protocol'=>3,'architecture'=>'app-modules']);
     }
     public function health(Request $r): JsonResponse {
         $dataDir = defined('DATA_DIR') ? DATA_DIR : (defined('NYX_DATA_DIR') ? NYX_DATA_DIR : '');
@@ -72,11 +74,11 @@ final class OpsController {
             }
         } catch (\Throwable $e) {}
         $status = 'ok';
-        return ApiEnvelope::ok([
+        return JsonResponse::ok([
             'status' => $status,
             'ok' => true,
             'service' => 'nyx-relay',
-            'version' => defined('NYX_VERSION') ? NYX_VERSION : '1.44.0-modular',
+            'version' => defined('NYX_VERSION') ? NYX_VERSION : '1.45.0-modular',
             'protocol' => 3,
             'peers_configured' => $peers,
             'data_writable' => $writable,
@@ -87,10 +89,10 @@ final class OpsController {
     public function selftest(Request $r): JsonResponse {
         $dataDir=defined('DATA_DIR')?DATA_DIR:''; $peers=0;
         try{$t=(new FileStore($dataDir))->get('topology/nodes.json'); if(is_array($t['nodes']??null))$peers=count($t['nodes']);}catch(\Throwable $e){}
-        return ApiEnvelope::ok(['ok'=>true,'checks'=>['peers_configured'=>$peers,'version'=>defined('NYX_VERSION')?NYX_VERSION:'1.44.0-modular']]);
+        return JsonResponse::ok(['ok'=>true,'checks'=>['peers_configured'=>$peers,'version'=>defined('NYX_VERSION')?NYX_VERSION:'1.45.0-modular']]);
     }
     public function metrics(Request $r): JsonResponse {
-        return ApiEnvelope::ok(['time_ms'=>ApiEnvelope::nowMs(),'memory_bytes'=>memory_get_usage(true)]);
+        return JsonResponse::ok(['time_ms'=>self::nowMs(),'memory_bytes'=>memory_get_usage(true)]);
     }
     public function network(Request $r): JsonResponse {
         $store=new FileStore(defined('DATA_DIR')?DATA_DIR:'');
@@ -98,47 +100,16 @@ final class OpsController {
         $selfHost=strtolower((string)($_SERVER['HTTP_HOST']??''));
         if(str_contains($selfHost,':')) $selfHost=explode(':',$selfHost,2)[0];
         $selfBase = rtrim('https://'.$selfHost.'/nyx','/');
-        $now=ApiEnvelope::nowMs();
-        $peers=[]; $relays=[];
-        if($selfHost!==''){
-            $relays[]=self::relayRow($selfHost,$selfBase,true,0,$now,true);
-            $peers[]=['url'=>$selfBase,'host'=>$selfHost,'ok'=>true,'http'=>200,'latency_ms'=>null,'is_self'=>true];
-        }
-        foreach(($topo['nodes']??[]) as $n){
-            if(!is_array($n)||empty($n['url'])) continue;
-            $base=rtrim((string)$n['url'],'/');
-            $host=strtolower((string)($n['host']??parse_url($base,PHP_URL_HOST)?:''));
-            if($host!==''&&$selfHost!==''&&($host===$selfHost||str_contains($base,'//'.$selfHost))) continue;
-            [$ok,$code,$ms]=self::probe($base);
-            $peers[]=['url'=>$base,'host'=>$host,'ok'=>$ok,'http'=>$code,'latency_ms'=>$ms,'is_self'=>false];
-            $relays[]=self::relayRow($host,$base,$ok,$ms,$now,false);
-        }
-        $links=[];
-        for($i=0;$i<count($relays);$i++){
-            for($j=$i+1;$j<count($relays);$j++){
-                $a=$relays[$i]; $b=$relays[$j];
-                $bothOk=($a['status']??'')!=='crit' && ($b['status']??'')!=='crit';
-                $links[]=[
-                    'a'=>$a['id'],'b'=>$b['id'],
-                    'source'=>$a['id'],'target'=>$b['id'],
-                    'from'=>$a['name'],'to'=>$b['name'],'name'=>$b['name'],
-                    'status'=>$bothOk?'ok':'crit',
-                    'remote_version'=>$b['software_version']??'1.44.0-modular',
-                ];
+        $now=self::nowMs();
+        $rows=[self::relayRow($selfHost,$selfBase,true,0,$now,true)];
+        foreach($topo['nodes']??[] as $n){
+            $h=$n['host']??($n['name']??''); $b=$n['endpoint']??($n['url']??'');
+            if(!$h&&$b) { $parsed=parse_url($b); $h=$parsed['host']??$b; }
+            if($h&&strtolower($h)!==$selfHost){
+                [$ok,$code,$ms]=self::probe($b?:'https://'.$h);
+                $rows[]=self::relayRow($h,$b?:'https://'.$h,$ok,$ms,$now,false);
             }
         }
-        $up=count(array_filter($relays,static fn($x)=>($x['status']??'')!=='crit'));
-        $warn=count(array_filter($relays,static fn($x)=>($x['status']??'')==='warn'));
-        $crit=count(array_filter($relays,static fn($x)=>($x['status']??'')==='crit'));
-        $okc=count(array_filter($relays,static fn($x)=>($x['status']??'')==='ok'));
-        $health=$crit && !$okc ? 'crit' : (($warn||$crit)?'warn':'ok');
-        return ApiEnvelope::ok([
-            'time_ms'=>$now,'peers'=>$peers,'relays'=>$relays,'links'=>$links,
-            'count'=>count($relays),'online'=>$up,
-            'mesh_health'=>$health,'network_health'=>$health,
-            'counts'=>['relays'=>count($relays),'ok'=>$okc,'warn'=>$warn,'crit'=>$crit],
-            'generated_at'=>$now,'demo'=>false,'observer'=>$selfHost?:'localhost',
-            'version'=>defined('NYX_VERSION')?NYX_VERSION:'1.44.0-modular',
-        ]);
+        return JsonResponse::ok(['ok'=>true,'network'=>['nodes'=>$rows,'total_nodes'=>count($rows),'mesh_protocol'=>3],'time_ms'=>$now]);
     }
 }

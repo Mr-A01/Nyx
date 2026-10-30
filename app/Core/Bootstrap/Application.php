@@ -138,14 +138,18 @@ final class Application
     {
         $router = $this->router;
         $apiDir = $this->routePaths['api'] ?? null;
-        if ($apiDir && is_dir($apiDir)) {
-            foreach (['v3', 'v1'] as $ver) {
-                $dir = $apiDir . '/' . $ver;
-                if (!is_dir($dir)) {
-                    continue;
-                }
-                foreach (glob($dir . '/*.php') ?: [] as $file) {
-                    require $file;
+        if ($apiDir) {
+            if (is_file($apiDir)) {
+                require $apiDir;
+            } elseif (is_dir($apiDir)) {
+                foreach (['v3', 'v1'] as $ver) {
+                    $dir = $apiDir . '/' . $ver;
+                    if (!is_dir($dir)) {
+                        continue;
+                    }
+                    foreach (glob($dir . '/*.php') ?: [] as $file) {
+                        require $file;
+                    }
                 }
             }
         }

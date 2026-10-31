@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace NyxCoreHttp;
+namespace Nyx\Core\Http;
 final class Request {
     public function __construct(private string $method, private string $path, private array $query, private array $body, private array $headers, private array $server) {}
     public static function capture(): self {
@@ -37,7 +37,7 @@ final class Request {
     }
     public function bearerToken(): ?string {
         $auth = $this->header('Authorization') ?? ($this->server['HTTP_AUTHORIZATION'] ?? '');
-        if (preg_match('/^Bearers+(.+)$/i', (string)$auth, $m)) {
+        if (preg_match('/^Bearer\s+(\S+)$/i', (string)$auth, $m)) {
             return trim($m[1]);
         }
         return null;

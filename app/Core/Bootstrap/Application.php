@@ -89,6 +89,8 @@ final class Application
             '/api/v3/chain/tip',
             '/api/v3/chain/block',
             '/api/v3/chain/verify',
+            '/api/v3/chain/range',
+            '/api/v3/chain/stats',
             '/api/v3/chain/gossip',
             '/api/v3/chain/mesh',
             '/api/v3/chain/announce',

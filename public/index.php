@@ -2,7 +2,7 @@
 declare(strict_types=1);
 define('NYX_START', microtime(true));
 define('NYX_BASE', is_dir(__DIR__ . '/../app') ? dirname(__DIR__) : __DIR__);
-define('NYX_VERSION', '1.44.0-modular');
+define('NYX_VERSION', '1.45.0-scale');
 define('NYX_PROTOCOL', 3);
 $dataDir = is_dir(NYX_BASE . '/data') ? NYX_BASE . '/data' : NYX_BASE . '/storage/data';
 define('NYX_DATA_DIR', $dataDir); define('DATA_DIR', $dataDir);

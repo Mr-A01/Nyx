@@ -85,9 +85,30 @@ final class OpsController {
         ]);
     }
     public function selftest(Request $r): JsonResponse {
-        $dataDir=defined('DATA_DIR')?DATA_DIR:''; $peers=0;
-        try{$t=(new FileStore($dataDir))->get('topology/nodes.json'); if(is_array($t['nodes']??null))$peers=count($t['nodes']);}catch(\Throwable $e){}
-        return ApiEnvelope::ok(['ok'=>true,'checks'=>['peers_configured'=>$peers,'version'=>defined('NYX_VERSION')?NYX_VERSION:'1.44.0-modular']]);
+        $dataDir = defined('DATA_DIR') ? DATA_DIR : '';
+        $basePath = defined('NYX_BASE') ? NYX_BASE : dirname(__DIR__, 6);
+        $peers = 0;
+        $store = new FileStore($dataDir);
+        try {
+            $t = $store->get('topology/nodes.json');
+            if (is_array($t['nodes'] ?? null)) {
+                $peers = count($t['nodes']);
+            }
+        } catch (\Throwable $e) {
+        }
+        $deep = ['ok' => false, 'tests' => []];
+        try {
+            $deep = (new \Nyx\Core\Health\SelfTest($basePath, $store))->run();
+        } catch (\Throwable $e) {
+            $deep = ['ok' => false, 'tests' => ['exception' => $e->getMessage()]];
+        }
+        $checks = array_merge([
+            'peers_configured' => $peers,
+            'version' => defined('NYX_VERSION') ? NYX_VERSION : '1.45.0-scale',
+            'protocol' => defined('NYX_PROTOCOL') ? NYX_PROTOCOL : 3,
+        ], is_array($deep['tests'] ?? null) ? $deep['tests'] : []);
+        $ok = ($deep['ok'] ?? false) === true;
+        return ApiEnvelope::ok(['ok' => $ok, 'checks' => $checks]);
     }
     public function metrics(Request $r): JsonResponse {
         return ApiEnvelope::ok(['time_ms'=>ApiEnvelope::nowMs(),'memory_bytes'=>memory_get_usage(true)]);

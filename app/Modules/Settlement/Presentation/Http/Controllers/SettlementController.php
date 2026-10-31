@@ -170,4 +170,110 @@ final class SettlementController
             'note' => 'Batches are portable JSON proofs; external L1/L2 submit is operator-side.',
         ]);
     }
+
+    /** List latest batch summaries known from peers (mesh index). */
+    public function mesh(Request $r): JsonResponse
+    {
+        $store = $this->store();
+        $dir = $store->root() . '/settlement/peers';
+        $items = [];
+        if (is_dir($dir)) {
+            foreach (glob($dir . '/*.json') ?: [] as $f) {
+                $rec = json_decode((string)@file_get_contents($f), true);
+                if (is_array($rec)) {
+                    $items[] = $rec;
+                }
+            }
+        }
+        usort($items, static fn($a, $b) => ((int)($b['seen_ms'] ?? 0)) <=> ((int)($a['seen_ms'] ?? 0)));
+        $local = null;
+        $index = $store->get('settlement/index.json') ?? ['ids' => []];
+        $ids = is_array($index['ids'] ?? null) ? $index['ids'] : [];
+        if ($ids !== []) {
+            $b = $store->get('settlement/batches/' . $ids[0] . '.json');
+            if (is_array($b)) {
+                $local = [
+                    'node' => strtolower((string)($_SERVER['HTTP_HOST'] ?? '')),
+                    'batch_id' => $b['batch_id'] ?? $ids[0],
+                    'content_hash' => $b['content_hash'] ?? '',
+                    'status' => $b['status'] ?? '',
+                    'from_height' => $b['from_height'] ?? 0,
+                    'to_height' => $b['to_height'] ?? 0,
+                    'seen_ms' => $b['created_ms'] ?? 0,
+                ];
+            }
+        }
+        return ApiEnvelope::ok(['local' => $local, 'peers' => $items, 'count' => count($items)]);
+    }
+
+    /** Accept peer settlement batch announcement. */
+    public function gossip(Request $r): JsonResponse
+    {
+        $b = $r->json() ?? [];
+        $node = strtolower(preg_replace('/[^a-z0-9.\-]/', '', (string)($b['node'] ?? '')) ?? '');
+        $hash = substr((string)($b['content_hash'] ?? ''), 0, 64);
+        $batchId = preg_replace('/[^a-zA-Z0-9]/', '', (string)($b['batch_id'] ?? '')) ?? '';
+        if ($node === '' || $hash === '') {
+            return ApiEnvelope::error('node and content_hash required', 422);
+        }
+        $rec = [
+            'node' => $node,
+            'batch_id' => $batchId,
+            'content_hash' => $hash,
+            'status' => substr((string)($b['status'] ?? 'exported'), 0, 32),
+            'from_height' => (int)($b['from_height'] ?? 0),
+            'to_height' => (int)($b['to_height'] ?? 0),
+            'seen_ms' => ApiEnvelope::nowMs(),
+        ];
+        $this->store()->put("settlement/peers/{$node}.json", $rec);
+        return ApiEnvelope::ok(['accepted' => true, 'peer' => $rec]);
+    }
+
+    /** Announce latest local batch to topology peers. */
+    public function announce(Request $r): JsonResponse
+    {
+        $store = $this->store();
+        $index = $store->get('settlement/index.json') ?? ['ids' => []];
+        $ids = is_array($index['ids'] ?? null) ? $index['ids'] : [];
+        if ($ids === []) {
+            return ApiEnvelope::error('no local batches', 404);
+        }
+        $b = $store->get('settlement/batches/' . $ids[0] . '.json');
+        if (!is_array($b)) {
+            return ApiEnvelope::error('batch missing', 404);
+        }
+        $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+        $payload = json_encode([
+            'node' => $host,
+            'batch_id' => $b['batch_id'] ?? $ids[0],
+            'content_hash' => $b['content_hash'] ?? '',
+            'status' => $b['status'] ?? '',
+            'from_height' => $b['from_height'] ?? 0,
+            'to_height' => $b['to_height'] ?? 0,
+        ]);
+        $topo = $store->get('topology/nodes.json');
+        $nodes = is_array($topo['nodes'] ?? null) ? $topo['nodes'] : [];
+        $results = [];
+        foreach (array_slice($nodes, 0, 12) as $n) {
+            if (!is_array($n)) continue;
+            $base = rtrim((string)($n['url'] ?? ''), '/');
+            if ($base === '' || str_contains($base, $host)) continue;
+            $url = $base . '/api/v3/settlement/gossip';
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 4,
+                CURLOPT_CONNECTTIMEOUT => 2,
+                CURLOPT_POST => true,
+                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                CURLOPT_POSTFIELDS => $payload,
+            ]);
+            curl_exec($ch);
+            $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            $results[] = ['url' => $url, 'http' => $code, 'ok' => $code >= 200 && $code < 300];
+        }
+        return ApiEnvelope::ok(['announced' => count($results), 'results' => $results]);
+    }
+
 }

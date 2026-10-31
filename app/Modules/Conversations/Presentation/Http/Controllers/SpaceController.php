@@ -223,6 +223,7 @@ final class SpaceController {
         }
         if (array_key_exists('slow_mode_sec', $b)) {
             $rec['slow_mode_sec'] = max(0, min(3600, (int)$b['slow_mode_sec']));
+            $rec['slowmode_sec'] = $rec['slow_mode_sec'];
         }
         if (array_key_exists('max_members', $b)) {
             $rec['max_members'] = max(0, (int)$b['max_members']);
@@ -257,7 +258,7 @@ final class SpaceController {
                 $rec['handle'] = $handle;
             }
         }
-        if (array_key_exists('slowmode_sec', $b)) $rec['slowmode_sec'] = max(0, min(86400, (int)$b['slowmode_sec']));
+        if (array_key_exists('slowmode_sec', $b)) { $rec['slowmode_sec'] = max(0, min(86400, (int)$b['slowmode_sec'])); $rec['slow_mode_sec'] = $rec['slowmode_sec']; }
         if (array_key_exists('history_visible', $b)) $rec['history_visible'] = !empty($b['history_visible']);
         if (array_key_exists('is_public', $b) || array_key_exists('public', $b)) {
             $pub = !empty($b['is_public']) || !empty($b['public']);
@@ -1069,7 +1070,7 @@ public function openDm(Request $r): JsonResponse {
             'audit' => $audit,
             'settings' => [
                 'join_mode' => (string)($space['join_mode'] ?? 'open'),
-                'slow_mode_sec' => (int)($space['slow_mode_sec'] ?? 0),
+                'slow_mode_sec' => (int)($space['slow_mode_sec'] ?? $space['slowmode_sec'] ?? 0),
                 'max_members' => (int)($space['max_members'] ?? 0),
                 'who_can_invite' => (string)($space['who_can_invite'] ?? 'admin'),
                 'who_can_post' => (string)($space['who_can_post'] ?? 'member'),

@@ -482,3 +482,7 @@ $router->get('/api/v3/settlement/batch', [$settle, 'get']);
 $router->post('/api/v3/settlement/export', [$settle, 'create']);
 $router->post('/api/v3/settlement/mark', [$settle, 'mark']);
 
+$router->get('/api/v3/settlement/mesh', [$settle, 'mesh']);
+$router->post('/api/v3/settlement/gossip', [$settle, 'gossip']);
+$router->post('/api/v3/settlement/announce', [$settle, 'announce']);
+

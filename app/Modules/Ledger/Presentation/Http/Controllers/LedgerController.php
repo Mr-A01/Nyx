@@ -150,4 +150,39 @@ final class LedgerController
         $this->store()->put("ledger/tx/{$uid}/{$txId}.json", $tx);
         return ApiEnvelope::ok(['claimed' => true, 'grant' => $grant, 'balance' => $bal, 'tx' => $tx]);
     }
+
+    /** Export recent receipts for the user (chain-ready JSON batch). */
+    public function exportReceipts(Request $r): JsonResponse
+    {
+        $uid = AuthContext::userId($r);
+        if ($uid === '') {
+            return ApiEnvelope::error('unauthorized', 401);
+        }
+        $limit = max(1, min(200, (int)($r->query('limit') ?? 50)));
+        $dir = $this->store()->root() . '/ledger/tx/' . preg_replace('/[^a-zA-Z0-9_\-]/', '', $uid);
+        $items = [];
+        if (is_dir($dir)) {
+            $files = glob($dir . '/*.json') ?: [];
+            rsort($files);
+            foreach (array_slice($files, 0, $limit) as $f) {
+                $rec = json_decode((string)@file_get_contents($f), true);
+                if (is_array($rec)) {
+                    $items[] = $rec;
+                }
+            }
+        }
+        $batchId = substr(hash('sha256', $uid . '|' . ApiEnvelope::nowMs() . '|' . count($items)), 0, 20);
+        $payload = [
+            'format' => 'nyx-ledger-receipts-v1',
+            'batch_id' => $batchId,
+            'user_id' => $uid,
+            'exported_ms' => ApiEnvelope::nowMs(),
+            'count' => count($items),
+            'receipts' => $items,
+        ];
+        $payload['content_hash'] = hash('sha256', json_encode($items, JSON_UNESCAPED_SLASHES));
+        $this->store()->put("ledger/exports/{$uid}/{$batchId}.json", $payload);
+        return ApiEnvelope::ok($payload);
+    }
+
 }

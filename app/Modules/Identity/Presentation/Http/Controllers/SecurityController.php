@@ -246,4 +246,80 @@ final class SecurityController
         if (count($rec['items']) > 200) $rec['items'] = array_slice($rec['items'], -200);
         $this->store()->put("security/audit/{$uid}.json", $rec);
     }
+
+    /**
+     * Short-lived device-continue code (default 90s). Bound to current session identity.
+     * Does not expose password; redeemer gets a fresh session token.
+     */
+    public function createContinueCode(Request $r): JsonResponse
+    {
+        $uid = $this->uid($r);
+        if ($uid === '') return ApiEnvelope::error('unauthorized', 401);
+        $b = $r->json() ?? [];
+        $ttl = max(30, min(300, (int)($b['ttl_sec'] ?? 90)));
+        $code = strtoupper(substr(bin2hex(random_bytes(5)), 0, 8));
+        // human-friendly: XXXX-XXXX
+        $display = substr($code, 0, 4) . '-' . substr($code, 4, 4);
+        $now = ApiEnvelope::nowMs();
+        $urow = $this->store()->get("users/{$uid}.json");
+        if (!is_array($urow)) {
+            $urow = $this->store()->get("identity/usernames/{$uid}.json") ?: [];
+        }
+        $username = (string)($urow['username'] ?? AuthContext::username() ?: $uid);
+        $rec = [
+            'code' => $code,
+            'display' => $display,
+            'user_id' => $uid,
+            'username' => $username,
+            'created_ms' => $now,
+            'expires_ms' => $now + ($ttl * 1000),
+            'used' => false,
+            'source_session' => substr(hash('sha256', AuthContext::bearerToken($r) ?: random_bytes(8)), 0, 16),
+        ];
+        $this->store()->put("continue_codes/{$code}.json", $rec);
+        return ApiEnvelope::ok([
+            'code' => $display,
+            'code_raw' => $code,
+            'ttl_sec' => $ttl,
+            'expires_ms' => $rec['expires_ms'],
+            'hint' => 'Enter this code on the other device within the TTL. Do not share publicly.',
+        ]);
+    }
+
+    public function redeemContinueCode(Request $r): JsonResponse
+    {
+        $b = $r->json() ?? [];
+        $raw = strtoupper(preg_replace('/[^a-zA-Z0-9]/', '', (string)($b['code'] ?? '')));
+        if (strlen($raw) < 8) return ApiEnvelope::error('invalid code', 422);
+        $code = substr($raw, 0, 8);
+        $rec = $this->store()->get("continue_codes/{$code}.json");
+        if (!is_array($rec)) return ApiEnvelope::error('code not found', 404);
+        $now = ApiEnvelope::nowMs();
+        if (!empty($rec['used'])) return ApiEnvelope::error('code already used', 410);
+        if ($now > (int)($rec['expires_ms'] ?? 0)) return ApiEnvelope::error('code expired', 410);
+        $rec['used'] = true;
+        $rec['used_ms'] = $now;
+        $this->store()->put("continue_codes/{$code}.json", $rec);
+        $token = bin2hex(random_bytes(24));
+        $uid = (string)($rec['user_id'] ?? '');
+        $username = (string)($rec['username'] ?? '');
+        $this->store()->put("sessions/{$token}.json", [
+            'token' => $token,
+            'user_id' => $uid,
+            'username' => $username,
+            'created_ms' => $now,
+            'expires_ms' => $now + 86400000 * 30,
+            'via' => 'device_continue',
+            'user_agent' => substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 160),
+            'ip' => (string)($_SERVER['REMOTE_ADDR'] ?? ''),
+        ]);
+        return ApiEnvelope::ok([
+            'token' => $token,
+            'session' => $token,
+            'user_id' => $uid,
+            'username' => $username,
+            'via' => 'device_continue',
+        ]);
+    }
+
 }

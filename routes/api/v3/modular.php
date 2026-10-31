@@ -445,3 +445,11 @@ $router->get('/api/v3/ledger/history', [$ledger, 'history']);
 $router->post('/api/v3/ledger/transfer', [$ledger, 'transfer']);
 $router->post('/api/v3/ledger/faucet', [$ledger, 'faucet']);
 
+// Device continue (session transfer without password re-entry)
+$router->post('/api/v3/security/continue/create', [$sec, 'createContinueCode']);
+$router->post('/api/v3/auth/continue/create', [$sec, 'createContinueCode']);
+$router->post('/api/v3/security/continue/redeem', [$sec, 'redeemContinueCode']);
+$router->post('/api/v3/auth/continue/redeem', [$sec, 'redeemContinueCode']);
+$router->get('/api/v3/ledger/export', [$ledger, 'exportReceipts']);
+$router->post('/api/v3/ledger/export', [$ledger, 'exportReceipts']);
+

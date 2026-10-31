@@ -95,6 +95,8 @@ final class Application
             '/api/v3/auth/login',
             '/api/v3/auth/challenge',
             '/api/v3/auth/session',
+            '/api/v3/auth/continue/redeem',
+            '/api/v3/security/continue/redeem',
             '/api/v1/identity/challenge',
             '/api/v3/identity/challenge',
         ];

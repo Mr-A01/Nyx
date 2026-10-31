@@ -426,6 +426,20 @@ body.paused .orbit, body.paused .star, body.paused .moon-glow { animation-play-s
   h1.vtitle { font-size: 22px; }
 }
 </style>
+<script data-cfasync="false">
+setTimeout(function(){
+  try {
+    var t = (document.body && document.body.innerText) || "";
+    if (t.indexOf("INITIALIZING") >= 0) {
+      console.warn("[NYX] identity init timeout");
+      document.querySelectorAll(".boot,.splash,[class*=init]").forEach(function(el){ el.style.opacity="0"; el.style.pointerEvents="none"; });
+      document.body.classList.add("ready");
+      var login = document.querySelector("[data-view=login], #login, .login-panel, form");
+      if (login) login.style.display = "block";
+    }
+  } catch(e) {}
+}, 6000);
+</script>
 </head>
 <body>
 
@@ -512,7 +526,7 @@ body.paused .orbit, body.paused .star, body.paused .moon-glow { animation-play-s
 <div id="a11y-status" class="sr-only" aria-live="polite" role="status"></div>
 <noscript><div style="padding:40px;text-align:center;color:#F87171">NYX Identity requires JavaScript for local cryptographic operations.</div></noscript>
 
-<script data-cfasync="false" type="module">
+<script data-cfasync="false">
 /* ==========================================================================
    NYX IDENTITY — application module
    Sections: utils · theme · crypto service · .nyxid format · password policy
@@ -1050,8 +1064,11 @@ const demoInbox = [];   // DEMO ONLY: simulated outbound mail; production sends 
 
 /* ===== PRODUCTION API BRIDGE (NYX relay /api/v1) ===== */
 function nyxApiBases(){
+  // Minimal bases — avoid multi-second sequential timeouts on dead paths
+  const bases = [location.origin+'/nyx/', location.origin+'/nyx/index.php/'];
   let p=location.pathname.replace(/\/[^\/]*$/,'/'); if(!p.endsWith('/')) p+='/';
-  return [p, p+'index.php/', location.origin+p, location.origin+'/nyx/', location.origin+'/nyx/index.php/'];
+  if (p && p.indexOf('/nyx')>=0) bases.push(p);
+  return [...new Set(bases)];
 }
 async function nyxFetch(method, rel, body, session){
   let last;
@@ -1103,7 +1120,7 @@ const demoApi = {
     const u = String(username || '').trim().toLowerCase();
     if (!/^[a-z0-9_]{3,32}$/.test(u) || RESERVED.has(u)) throw Object.assign(new Error('This username cannot be used.'), { code: 'INVALID' });
     try {
-      const d = await nyxFetch('POST', 'api/v1/identity/register', {
+      const d = await nyxFetch('POST', 'api/v1/auth/register', {
         username: u, displayName: displayName || '', email: email || '',
         pwhashStr, pwhash: pwhashStr, password: password || undefined, secondaryHash: secondaryHash || null,
         passkeyCred: passkeyCred || null, fingerprint: fingerprint || '', kid,
@@ -1125,7 +1142,7 @@ const demoApi = {
         dbSave(db);
         window.__nyxLastDevCode = d.email.dev_code;
       }
-      return { id: d.id || kid, email: d.email };
+      return Object.assign({ id: d.id || kid, email: d.email || null }, d || {});
     } catch (e) {
       if (e.code === 'DUPLICATE' || e.http === 409) throw Object.assign(new Error('Username already taken.'), { code: 'DUPLICATE' });
       if (e.code === 'RATE_LIMITED' || e.http === 429) throw e;
@@ -1397,32 +1414,46 @@ async function validateSession(s) {
   return false;
 }
 
-async async function mintLiveSession(username, password) {
+async function mintLiveSession(username, password) {
   const u = String(username || '').trim().toLowerCase();
   const pw = password || '';
+  if (!u) throw new Error('Username required for live session');
+  if (!pw) throw new Error('Password required for live session');
   let sd = null;
-  const bodies = [{ username: u, password: pw }, { username: u }];
-  const paths = ['api/v3/auth/session','api/v1/auth/session','api/v3/auth/login','api/v1/auth/login'];
+  const bodies = [{ username: u, password: pw }];
+  // Prefer login (always available); session endpoints may 404 on some nodes
+  const paths = ['api/v1/auth/login', 'api/v3/auth/login', 'api/v1/auth/session', 'api/v3/auth/session'];
+  let lastErr = null;
   for (const path of paths) {
     for (const body of bodies) {
       try {
         sd = await nyxFetch('POST', path, body);
-        if (sd && (sd.session || sd.token || (sd.data && (sd.data.session || sd.data.token)))) break;
-      } catch (e) { sd = null; }
+        if (sd && sd.data && !(sd.session || sd.token)) sd = Object.assign({}, sd, sd.data);
+        if (sd && (sd.session || sd.token)) break;
+      } catch (e) { lastErr = e; sd = null; }
     }
-    if (sd && (sd.session || sd.token || (sd.data && (sd.data.session || sd.data.token)))) break;
+    if (sd && (sd.session || sd.token)) break;
   }
-  if (sd && sd.data && !(sd.session || sd.token)) sd = Object.assign({}, sd, sd.data);
-  if (!sd || !(sd.session || sd.token)) {
-    const token = (typeof crypto !== 'undefined' && crypto.getRandomValues)
-      ? Array.from(crypto.getRandomValues(new Uint8Array(24))).map(b => b.toString(16).padStart(2,'0')).join('')
-      : (Date.now().toString(36) + Math.random().toString(36).slice(2));
-    console.warn('[NYX identity] using local session fallback');
-    sd = { token, session: token, username: u, displayName: u, local: true };
+  const token = (sd && (sd.session || sd.token)) || null;
+  if (!token) {
+    const msg = (lastErr && lastErr.message) || 'Server did not return a session token';
+    throw Object.assign(new Error(msg), { code: 'SESSION_FAILED' });
   }
-  const token = sd.session || sd.token;
-  if (sd.messaging) { try { sessionStorage.setItem('nyx.messaging', JSON.stringify(sd.messaging)); } catch (e) {} }
-  return { token, session: token, username: u, displayName: sd.displayName || sd.display_name || u };
+  let displayName = (sd && (sd.displayName || sd.display_name)) || '';
+  if (!displayName && sd && sd.data) displayName = sd.data.displayName || sd.data.display_name || '';
+  if (!displayName) displayName = u;
+  if (sd && sd.messaging) {
+    try { sessionStorage.setItem('nyx.messaging', JSON.stringify(sd.messaging)); } catch (e) {}
+  }
+  const userId = (sd && (sd.user_id || sd.userId || sd.id)) || (sd && sd.data && (sd.data.user_id || sd.data.userId)) || '';
+  return {
+    token,
+    session: token,
+    username: u,
+    displayName,
+    user_id: userId,
+    identityId: userId
+  };
 }
 
 function saveSession(s) {
@@ -2176,12 +2207,26 @@ function regStep5() {
           announce('Registering identity');
           const pwhashStr = await CryptoSvc.pwhashStr(d.password);
           const secondaryHash = d.secondary ? hex(await CryptoSvc.sha256(d.secondary + '::' + d.username)) : null;
-          await demoApi.register({
+          const regRes = await demoApi.register({
             username: d.username, displayName: d.displayName, email: d.email,
             pwhashStr, password: d.password, secondaryHash,
             totpSecret: d.secType === 'totp' ? d.totpSecret : null,
             passkeyCred: d.passkeyCred, fingerprint, kid,
           });
+          // Prefer server session issued at register time
+          try {
+            const tok = regRes && (regRes.token || regRes.session || (regRes.data && (regRes.data.token || regRes.data.session)));
+            if (tok) {
+              session = {
+                token: tok, session: tok,
+                username: d.username,
+                displayName: d.displayName || d.username,
+                user_id: (regRes.user_id || regRes.userId || (regRes.data && regRes.data.user_id) || ''),
+              };
+              saveSession(session);
+            }
+            state.lastPassword = d.password;
+          } catch (eReg) { console.warn('reg session', eReg); }
           if (d.emailVerified && d.email) demoApi.setUserFields(d.username, {}, 'account.registered', 'Registration complete with verified email');
           d.kid = kid;
           state.lastGenerated = { bytes, fingerprint, filename: `${d.username}.nyxid` };
@@ -2243,13 +2288,15 @@ function regStep6() {
         const btn = $('#r6-enter', root);
         try { if (btn) { btn.disabled = true; btn.textContent = 'Opening…'; } } catch (e) {}
         try {
-          session = await mintLiveSession(d.username, state.unlockedPassword || state.lastPassword || d.password || '');
+          const pw = state.unlockedPassword || state.lastPassword || (d && d.password) || state.draft && state.draft.password || '';
+          if (!pw) throw new Error('Password missing from wizard state — sign in again.');
+          session = await mintLiveSession(d.username, pw);
           saveSession(session);
         } catch (e) {
           console.warn('mintLiveSession', e);
-          const token = Date.now().toString(36) + Math.random().toString(36).slice(2);
-          session = { token, session: token, username: String(d.username||'').toLowerCase(), displayName: d.displayName || d.username };
-          try { saveSession(session); } catch (e2) {}
+          try { if (btn) { btn.disabled = false; btn.textContent = 'Enter NYX'; } } catch (e2) {}
+          alert('Could not open a live session: ' + (e && e.message ? e.message : e) + '\n\nUse Sign In with your username and password.');
+          return;
         }
         if (d.secType === 'totp') {
           const codes = genRecoveryCodes();
@@ -3286,9 +3333,9 @@ $('#selftest-link').onclick = async () => {
 $('#brand').onclick = () => go(session ? 'account' : 'welcome');
 $('#brand').onkeydown = e => { if (e.key === 'Enter') go(session ? 'account' : 'welcome'); };
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1e6a7df81d414352984db37fd2be5e28","r":1,"spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1e6a7df81d414352984db37fd2be5e28","r":1,"spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1e6a7df81d414352984db37fd2be5e28","r":1,"spa":2}' crossorigin="anonymous"></script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1e6a7df81d414352984db37fd2be5e28","r":1,"spa":2}' crossorigin="anonymous"></script>
+<script  src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1e6a7df81d414352984db37fd2be5e28","r":1,"spa":2}' crossorigin="anonymous"></script>
+<script  src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1e6a7df81d414352984db37fd2be5e28","r":1,"spa":2}' crossorigin="anonymous"></script>
+<script  src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1e6a7df81d414352984db37fd2be5e28","r":1,"spa":2}' crossorigin="anonymous"></script>
+<script  src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"1e6a7df81d414352984db37fd2be5e28","r":1,"spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>

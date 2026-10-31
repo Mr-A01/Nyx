@@ -1,57 +1,55 @@
-# NYX Relay · 1.45.0-modular
+# NYX Messenger Pro
 
-Federated E2EE messenger relay (Protocol 3) — modular MVC / hexagonal layout.
+Federated **E2EE** messenger relay with a clean hexagonal / modular architecture.
 
-## Structure
+## Highlights
 
-```
-NYX/
-├── app/
-│   ├── Core/                 # HTTP, routing, container, security
-│   ├── Modules/              # Business modules (Messaging, Identity, Federation, …)
-│   └── Shared/               # Shared infrastructure
-├── public/                   # Web document root
-│   ├── index.php             # Front controller
-│   ├── install.php           # One-time PHP installer
-│   ├── client.html / status.html / identity.html
-│   └── vendor/
-├── routes/api/v3/            # API route maps
-├── storage/ · data/          # Runtime data (writable)
-├── docker/ · docker-compose.yml
-├── docs/ · tests/ · config/
-└── .env.example
-```
+- Protocol 3 relay with mesh federation & self-healing topology
+- E2EE (libsodium) · identity · devices · conversations · messaging
+- Secure signed updates · rate limiting · audit · privacy tools
+- Shared-hosting friendly (`public/` as document root) **or** Docker/K8s
 
-## Install — shared hosting (PHP)
+## Quick start (shared hosting)
 
-1. Upload so the **document root** is `public/` (or keep parent `.htaccess` rewrite).
-2. Open `https://your-domain/install.php` and fix any failed checks.
-3. Delete `public/install.php`.
-4. Copy `.env.example` → `.env` if missing; set secrets.
-5. Open `/` or `/client.html`.
+1. Upload project so web root points at **`public/`**
+2. `chmod -R 750 storage bootstrap/cache`
+3. Copy `.env.example` → `.env` and set secrets
+4. Open `/` (health) · `/client.html` · `/identity.html` · `/api/v3/...`
 
-Requires PHP **8.2+** with `sodium`, `sqlite3`/`pdo_sqlite`, `curl`, `mbstring`, `json`.
-
-## Install — Docker
+## Quick start (local)
 
 ```bash
-docker compose up -d --build
-# → http://localhost:8080
+composer install
+cp .env.example .env
+php -S 0.0.0.0:8080 -t public
 ```
 
-Standalone single container:
+## Architecture
 
-```bash
-docker build -f docker/Dockerfile.standalone -t nyx-relay .
-docker run --rm -p 8080:8080 -v nyx-data:/app/storage/data nyx-relay
-```
+See `docs/architecture/OVERVIEW.md` and `MODULE-MAP.md`.
 
-## Health
+| Layer | Role |
+|-------|------|
+| `app/Core` | Framework kernel (HTTP, routing, DI, security, queue…) |
+| `app/Modules/*` | Business capabilities (Identity, Messaging, Federation…) |
+| `app/Shared` | Cross-cutting domain primitives |
+| `public/` | Web entry only |
+| `legacy/` | Optional bridge to standalone relay |
 
-`GET /api/v3/ops/health` → `{ ok: true, version, peers_configured, ... }`
+## Namespace
 
-## Security notes
+`Nyx\` → `app/` (PSR-4)
 
-- E2EE is client-side (Sodium / WebCrypto); relay stores ciphertext only for E2EE rooms.
-- Never commit `.env` or `storage/data/*` user content.
-- Remove `install.php` after setup.
+## License
+
+Proprietary — all rights reserved.
+
+
+## Implementation strategy
+
+1. **Parity first** — all Protocol 3 APIs run through `LegacyRelayKernel` (same code as production nodes).
+2. **Componentize** — Core + Shared abstractions (`FileStore`, `RateLimiter`, Mesh/Update adapters).
+3. **Extract modules** — move one route group at a time behind feature tests.
+4. **Never dual-write blindly** — storage format stays identical (`storage/data`).
+
+See `docs/architecture/IMPLEMENTATION-STATUS.md`.

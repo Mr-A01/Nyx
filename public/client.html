@@ -7750,8 +7750,13 @@ const primary = [
     try {
       if (!(HttpDriver && HttpDriver.token)) { toast('Sign in required', '', 'warn'); return; }
       const amount = 1;
-      const to = String(m.senderId || m.sender_id || m.from || m.user_id || '').trim();
-      if (!to) { toast('Unknown sender', '', 'warn'); return; }
+      let to = String(m.senderId || m.sender_id || m.from || m.user_id || m.author_id || m.username || '').trim();
+      if (!to && m.sender && typeof m.sender === 'object') {
+        to = String(m.sender.id || m.sender.user_id || m.sender.username || '').trim();
+      }
+      if (!to) { toast('Unknown sender', 'Cannot tip this message', 'warn'); return; }
+      const me = String((HttpDriver.username || ACCOUNT_ID || '')).toLowerCase();
+      if (String(to).toLowerCase() === me) { toast('Cannot tip yourself', '', 'info'); return; }
       const res = await HttpDriver.req('POST', '/api/v3/ledger/transfer', {
         to: to, amount: amount, memo: 'tip:' + String(m.id || '').slice(0, 24),
       });
@@ -10570,7 +10575,9 @@ ${NyxApi.mode === 'live' ? `<button class="btn sm" id="api-disc">Disconnect (use
 <button class="btn sm" id="nyx-mine-reg">Register miner</button>
 <button class="btn sm pri" id="nyx-mine-tick">Claim node tick</button>
 <button class="btn sm" id="nyx-faucet">Welcome faucet</button>
+<button class="btn sm" id="nyx-settle-export">Export settlement batch</button>
 </div>
+<div class="kv"><span class="k">Settlement</span><span class="v" id="nyx-settle">—</span></div>
 <div class="hint" id="nyx-eco-hint">Requires live session. Tips from chat use the same ledger.</div></div>`,
 accessibility: `<div class="setsec"><h3>Accessibility</h3><div class="sd">WCAG 2.2 AA targets.</div>
 ${sw('reducedMotion', 'Reduce motion', 'Honors prefers-reduced-motion regardless.', 'device')}
@@ -10958,6 +10965,15 @@ const refreshEco = async () => {
     if (ch) ch.textContent = String(td.height != null ? td.height : '—') + (td.tip_hash ? ' · ' + String(td.tip_hash).slice(0, 12) + '…' : '');
     if (mn) mn.textContent = sd.miner ? ('registered · earned ' + (sd.miner.total_earned || 0)) : 'not registered';
     if (hint) hint.textContent = 'Rates: probe/heartbeat/relay · daily cap ' + (sd.max_claim_per_day || 5000);
+    try {
+      const st = await HttpDriver.req('GET', '/api/v3/settlement/status');
+      const s = st.data || st;
+      const el = $('#nyx-settle', root);
+      if (el) {
+        const L = s.latest;
+        el.textContent = L ? (String(L.status) + ' · h' + L.from_height + '-' + L.to_height) : ('ready · chain ' + (s.chain_height || 0));
+      }
+    } catch (_e) {}
   } catch (e) { if (hint) hint.textContent = String(e.message || e); }
 };
 if ($('#nyx-refresh-eco', root)) { $('#nyx-refresh-eco', root).onclick = refreshEco; refreshEco(); }
@@ -10978,6 +10994,16 @@ if ($('#nyx-mine-tick', root)) $('#nyx-mine-tick', root).onclick = async () => {
 if ($('#nyx-faucet', root)) $('#nyx-faucet', root).onclick = async () => {
   try { const res = await HttpDriver.req('POST', '/api/v3/ledger/faucet', {}); const d = res.data || res; toast(d.claimed ? ('Granted ' + d.grant) : 'Already claimed', '', 'ok'); refreshEco(); }
   catch (e) { apiErrorToast(e); }
+};
+if ($('#nyx-settle-export', root)) $('#nyx-settle-export', root).onclick = async () => {
+  const btn = $('#nyx-settle-export', root); setBtnLoad(btn, true, 'Exporting…');
+  try {
+    const res = await HttpDriver.req('POST', '/api/v3/settlement/export', { max_blocks: 50 });
+    const d = res.data || res;
+    toast('Batch ' + (d.batch_id || '').slice(0, 12), (d.block_count || 0) + ' blocks · ' + String(d.content_hash || '').slice(0, 12), 'ok');
+    refreshEco();
+  } catch (e) { apiErrorToast(e); }
+  finally { setBtnLoad(btn, false); }
 };
 const st = $('#st-tests', root); if (st) st.onclick = runChecks;
 const sr = $('#st-reload', root); if (sr) sr.onclick = () => boot(true);

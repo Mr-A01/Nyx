@@ -474,3 +474,11 @@ $router->get('/api/v3/spaces/admin-summary', [$space, 'adminSummary']);
 $router->post('/api/v3/spaces/admin-summary', [$space, 'adminSummary']);
 $router->get('/api/v3/groups/admin-summary', [$space, 'adminSummary']);
 
+// Settlement bridge (work-chain → portable batch for L1/L2)
+$settle = new \Nyx\Modules\Settlement\Presentation\Http\Controllers\SettlementController();
+$router->get('/api/v3/settlement/status', [$settle, 'status']);
+$router->get('/api/v3/settlement/batches', [$settle, 'list']);
+$router->get('/api/v3/settlement/batch', [$settle, 'get']);
+$router->post('/api/v3/settlement/export', [$settle, 'create']);
+$router->post('/api/v3/settlement/mark', [$settle, 'mark']);
+

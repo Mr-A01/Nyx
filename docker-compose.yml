@@ -1,8 +1,16 @@
 services:
   php:
+    hostname: php
     build:
       context: .
       dockerfile: docker/php/Dockerfile
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+      args:
+        HTTP_PROXY: http://host.docker.internal:10808
+        HTTPS_PROXY: http://host.docker.internal:10808
+        http_proxy: http://host.docker.internal:10808
+        https_proxy: http://host.docker.internal:10808
     volumes:
       - ./:/var/www/nyx
       - nyx-data:/var/www/nyx/storage/data

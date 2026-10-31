@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-namespace Nyx\Core\Http;
+namespace NyxCoreHttp;
 final class Request {
     public function __construct(private string $method, private string $path, private array $query, private array $body, private array $headers, private array $server) {}
     public static function capture(): self {
@@ -23,9 +23,23 @@ final class Request {
     }
     public function method(): string { return $this->method; }
     public function path(): string { return $this->path; }
-    public function json(): ?array { return $this->body; }
+    public function json(?string $key = null, mixed $default = null): mixed {
+        return $key === null ? $this->body : ($this->body[$key] ?? $default);
+    }
+    public function input(?string $key = null, mixed $default = null): mixed {
+        return $this->json($key, $default);
+    }
     public function query(?string $key = null, mixed $default = null): mixed {
         return $key === null ? $this->query : ($this->query[$key] ?? $default);
     }
-    public function header(string $name, mixed $default = null): mixed { return $this->headers[$name] ?? $default; }
+    public function header(string $name, mixed $default = null): mixed {
+        return $this->headers[$name] ?? $this->headers[str_replace('-', ' ', ucwords(strtolower(str_replace('-', ' ', $name))))] ?? $default;
+    }
+    public function bearerToken(): ?string {
+        $auth = $this->header('Authorization') ?? ($this->server['HTTP_AUTHORIZATION'] ?? '');
+        if (preg_match('/^Bearers+(.+)$/i', (string)$auth, $m)) {
+            return trim($m[1]);
+        }
+        return null;
+    }
 }

@@ -174,6 +174,8 @@ final class Application
             '/api/v3/messages/search',
             '/api/v3/search',
             '/api/v3/search/global',
+            '/api/v3/ledger/me',
+            '/api/v3/ledger/history',
         ];
         if ($method === 'GET' && in_array($path, $authGets, true)) {
             return true;
@@ -216,7 +218,13 @@ final class Application
                 $result = $handler($request, $route['params'] ?? []);
             } elseif (is_array($handler) && count($handler) === 2) {
                 [$class, $methodName] = $handler;
-                $controller = $this->container->make($class);
+                if (is_object($class)) {
+                    $controller = $class;
+                } elseif (is_string($class)) {
+                    $controller = $this->container->make($class);
+                } else {
+                    return JsonResponse::error('Invalid route handler', 500);
+                }
                 $result = $controller->{$methodName}($request, $route['params'] ?? []);
             } else {
                 return JsonResponse::error('Invalid route handler', 500);

@@ -145,6 +145,24 @@ $router->get('/api/v3/spaces/audit', [$space,'auditLog']);
 $router->post('/api/v3/spaces/audit', [$space,'auditLog']);
 
 $router->post('/api/v3/spaces/invite', [$space,'invite']);
+
+$router->get('/api/v3/spaces/invites', [$space,'listInvites']);
+$router->post('/api/v3/spaces/invites', [$space,'listInvites']);
+$router->post('/api/v3/spaces/invite/revoke', [$space,'revokeInvite']);
+$router->post('/api/v3/spaces/invite/list', [$space,'listInvites']);
+$router->post('/api/v3/spaces/mute-member', [$space,'muteMember']);
+$router->post('/api/v3/spaces/mute_member', [$space,'muteMember']);
+$router->post('/api/v3/groups/invite', [$space,'invite']);
+$router->post('/api/v3/groups/invite/revoke', [$space,'revokeInvite']);
+$router->get('/api/v3/groups/invites', [$space,'listInvites']);
+$router->post('/api/v3/groups/mute-member', [$space,'muteMember']);
+$router->post('/api/v3/groups/ban', [$space,'ban']);
+$router->post('/api/v3/groups/unban', [$space,'unban']);
+$router->post('/api/v3/groups/kick', [$space,'kick']);
+$router->post('/api/v3/groups/set-role', [$space,'setRole']);
+$router->get('/api/v3/groups/audit', [$space,'auditLog']);
+$router->post('/api/v3/groups/settings', [$space,'settings']);
+
 $router->post('/api/v3/spaces/join-invite', [$space,'joinInvite']);
 $router->post('/api/v3/spaces/join_invite', [$space,'joinInvite']);
 $router->post('/api/v3/spaces/add-member', [$space,'addMember']);
@@ -419,4 +437,11 @@ $router->get('/api/v3/events', [$msg, 'events']);
 $router->get('/api/v3/events/list', [$msg, 'events']);
 $router->get('/api/v3/presence/status', [$pres, 'batch']);
 $router->get('/api/v3/presence', [$pres, 'batch']);
+
+// Off-chain ledger (token-ready foundation)
+$ledger = new \Nyx\Modules\Ledger\Presentation\Http\Controllers\LedgerController();
+$router->get('/api/v3/ledger/me', [$ledger, 'me']);
+$router->get('/api/v3/ledger/history', [$ledger, 'history']);
+$router->post('/api/v3/ledger/transfer', [$ledger, 'transfer']);
+$router->post('/api/v3/ledger/faucet', [$ledger, 'faucet']);
 

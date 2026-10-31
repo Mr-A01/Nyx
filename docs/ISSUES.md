@@ -1,25 +1,20 @@
-# NYX Issue Tracker (mr.a)
+# NYX Issue Tracker
 
-Reference IDs in commits: `Fixes NYX-xxx`.
+GitHub Issues API requires `GH_TOKEN`. Until provided, this file is the operational board.
+When `GH_TOKEN` is set, run `tools/github_issues_sync.sh` to mirror.
 
 ## Open
-| ID | Status | Title | Severity |
-|----|--------|-------|----------|
-| — | — | none | — |
+| ID | Title |
+|----|-------|
+| — | none (batch closed in 36e614d + current) |
 
-## Closed
-| ID | Fixed in | Title |
-|----|----------|-------|
-| NYX-008 | mr.a | Group create returns solo_owner + invite_hint |
-| NYX-007 | mr.a | Attachment dir checked in selftest; upload routes verified |
-| NYX-006 | mr.a | Offline sodium roundtrip test (`tests/unit/SodiumRoundtripTest.php`) |
-| NYX-005 | mr.a | CSP + object-src none + upgrade-insecure-requests (SPA still needs inline) |
-| NYX-004 | mr.a | Discover enriches owner_username / owner_display (no more silent @unknown) |
-| NYX-002 | mr.a | Root HTML stubs intentional (rewrite → public/); not user-facing pages |
-| NYX-003 | mr.a | Deep selftest (storage, sodium, client, random, attachments_dir) |
-| NYX-001 | mr.a | Password min aligned to 15 (UI + server) |
-| NYX-000 | 1.45.0-scale | `/?json=1` returned HTML due to DirectoryIndex index.html |
+## Closed this cycle
+| ID | Title |
+|----|-------|
+| NYX-010 | Group invite require admin + revoke/list + use counting |
+| NYX-011 | Join respects ban + join_mode (open/approval/invite_only) |
+| NYX-012 | Admin mute-member + slow_mode_sec / max_members settings |
+| NYX-013 | Off-chain ledger foundation (me/history/transfer/faucet) |
+| NYX-004 | Discover owner_username |
+| NYX-001..008 | Prior batch |
 
-## Notes
-- NYX-002: real UI lives only under `public/`. Root `*.html` are placeholders so misconfigured DirectoryIndex cannot serve stale pages.
-- NYX-005: full removal of `unsafe-inline` needs SPA nonce pipeline — future hardening, not a defect.

@@ -218,9 +218,16 @@ final class SpaceController {
         if (!$rec) return ApiEnvelope::error('space not found', 404);
         $auth = $this->assertActor($sid, $actor, 'admin');
         if ($auth !== true) return $auth;
-        foreach (['name', 'description', 'posting', 'join_mode'] as $k) {
+        foreach (['name', 'description', 'posting', 'join_mode', 'who_can_invite', 'who_can_post'] as $k) {
             if (array_key_exists($k, $b)) $rec[$k] = is_string($b[$k]) ? trim((string)$b[$k]) : $b[$k];
         }
+        if (array_key_exists('slow_mode_sec', $b)) {
+            $rec['slow_mode_sec'] = max(0, min(3600, (int)$b['slow_mode_sec']));
+        }
+        if (array_key_exists('max_members', $b)) {
+            $rec['max_members'] = max(0, (int)$b['max_members']);
+        }
+
         // Public handle / vanity id (admin/owner)
         if (array_key_exists('public_id', $b) || array_key_exists('handle', $b) || array_key_exists('username', $b)) {
             $raw = (string)($b['public_id'] ?? $b['handle'] ?? $b['username'] ?? '');
@@ -271,8 +278,25 @@ final class SpaceController {
         $sid = $this->resolveSpaceId($sid);
         $space = $this->store()->get("spaces/{$sid}.json");
         if (!$space) return ApiEnvelope::error('space not found', 404);
-        $rec = ['space_id' => $sid, 'user_id' => $uid, 'role' => $b['role'] ?? 'member', 'joined_ms' => ApiEnvelope::nowMs()];
+        // Ban check
+        if ($this->store()->get("bans/{$sid}/{$uid}.json")) {
+            return ApiEnvelope::error('banned from this space', 403);
+        }
+        $joinMode = (string)($space['join_mode'] ?? 'open');
+        if ($joinMode === 'invite_only') {
+            return ApiEnvelope::error('invite_only: use invite link', 403);
+        }
+        if ($joinMode === 'approval') {
+            $reqId = substr(hash('sha256', $sid.'|'.$uid.'|join'), 0, 16);
+            $this->store()->put("join_requests/{$sid}/{$uid}.json", [
+                'space_id' => $sid, 'user_id' => $uid, 'requested_ms' => ApiEnvelope::nowMs(),
+                'status' => 'pending', 'request_id' => $reqId,
+            ]);
+            return ApiEnvelope::ok(['pending' => true, 'space_id' => $sid, 'user_id' => $uid, 'join_mode' => 'approval']);
+        }
+        $rec = ['space_id' => $sid, 'user_id' => $uid, 'role' => 'member', 'joined_ms' => ApiEnvelope::nowMs()];
         $this->store()->put("memberships/{$sid}/{$uid}.json", $rec);
+        $this->audit($sid, $uid, 'join', $uid);
         return ApiEnvelope::ok(array_merge($rec, ['space' => $space]));
     }
     public function leave(Request $r): JsonResponse {
@@ -384,11 +408,11 @@ final class SpaceController {
         $b = $r->json() ?? [];
         $sid = (string)($b['space_id'] ?? $r->query('space_id') ?? '');
         if ($sid === '') return ApiEnvelope::error('space_id required', 422);
-        $actor = strtolower(trim((string)($b['actor_id'] ?? '')));
-        if ($actor !== '') {
-            $auth = $this->assertActor($sid, $actor, 'admin');
-            if ($auth !== true) return $auth;
-        }
+        $actor = AuthContext::userId($r, $b);
+        if ($actor === '') $actor = strtolower(trim((string)($b['actor_id'] ?? '')));
+        if ($actor === '') return ApiEnvelope::error('unauthorized', 401);
+        $auth = $this->assertActor($sid, $actor, 'admin');
+        if ($auth !== true) return $auth;
         $ttl = max(0, (int)($b['ttl_ms'] ?? 0));
         $maxUses = max(0, (int)($b['max_uses'] ?? 0));
         $rotate = !empty($b['rotate']);
@@ -472,11 +496,12 @@ final class SpaceController {
     }
     public function joinInvite(Request $r): JsonResponse {
         $b = $r->json() ?? [];
-        $code = (string)($b['code'] ?? $r->query('code') ?? '');
+        $code = preg_replace('/[^a-zA-Z0-9]/', '', (string)($b['code'] ?? $r->query('code') ?? ''));
         $uid = AuthContext::userId($r, $b);
         if ($code === '' || $uid === '') return ApiEnvelope::error('code and user_id required', 422);
         $inv = $this->store()->get("invites/{$code}.json");
-        if (!$inv) return ApiEnvelope::error('invite not found', 404);
+        if (!$inv || !is_array($inv)) return ApiEnvelope::error('invite not found', 404);
+        if (!empty($inv['revoked'])) return ApiEnvelope::error('invite revoked', 410);
         $now = ApiEnvelope::nowMs();
         $exp = (int)($inv['expires_at_ms'] ?? 0);
         if ($exp > 0 && $now > $exp) return ApiEnvelope::error('invite expired', 410);
@@ -485,8 +510,15 @@ final class SpaceController {
         if ($maxUses > 0 && $uses >= $maxUses) return ApiEnvelope::error('invite max uses reached', 410);
         $sid = (string)($inv['space_id'] ?? '');
         if ($sid === '') return ApiEnvelope::error('invalid invite', 422);
-        $rec = ['space_id' => $sid, 'user_id' => $uid, 'role' => 'member', 'joined_ms' => ApiEnvelope::nowMs()];
+        if ($this->store()->get("bans/{$sid}/{$uid}.json")) {
+            return ApiEnvelope::error('banned from this space', 403);
+        }
+        $rec = ['space_id' => $sid, 'user_id' => $uid, 'role' => 'member', 'joined_ms' => $now, 'via' => 'invite'];
         $this->store()->put("memberships/{$sid}/{$uid}.json", $rec);
+        $inv['uses'] = $uses + 1;
+        $inv['last_use_ms'] = $now;
+        $this->store()->put("invites/{$code}.json", $inv);
+        $this->audit($sid, $uid, 'join_invite', $code);
         $space = $this->store()->get("spaces/{$sid}.json");
         return ApiEnvelope::ok(['joined' => true, 'space_id' => $sid, 'invite' => $code, 'space' => $space]);
     }
@@ -891,6 +923,85 @@ public function openDm(Request $r): JsonResponse {
         if ($auth !== true) return $auth;
         $items = $this->listAudit($sid, 50);
         return ApiEnvelope::ok(['space_id'=>$sid,'items'=>$items,'audit'=>$items,'count'=>count($items)]);
+    }
+
+
+    public function listInvites(Request $r): JsonResponse {
+        $b = $r->json() ?? [];
+        $sid = (string)($r->query('space_id') ?? ($b['space_id'] ?? ''));
+        $actor = AuthContext::userId($r, $b);
+        if ($actor === '') $actor = strtolower(trim((string)($b['actor_id'] ?? '')));
+        if ($sid === '') return ApiEnvelope::error('space_id required', 422);
+        $auth = $this->assertActor($sid, $actor, 'admin');
+        if ($auth !== true) return $auth;
+        $items = [];
+        $dir = $this->store()->root() . '/invites';
+        if (is_dir($dir)) {
+            foreach (glob($dir . '/*.json') ?: [] as $f) {
+                if (str_starts_with(basename($f), 'active_')) continue;
+                $rec = json_decode((string)@file_get_contents($f), true);
+                if (!is_array($rec)) continue;
+                if ((string)($rec['space_id'] ?? '') !== $sid) continue;
+                if (!empty($rec['revoked'])) continue;
+                $items[] = $rec;
+            }
+        }
+        return ApiEnvelope::ok(['space_id' => $sid, 'items' => $items, 'count' => count($items)]);
+    }
+
+    public function revokeInvite(Request $r): JsonResponse {
+        $b = $r->json() ?? [];
+        $sid = (string)($b['space_id'] ?? '');
+        $code = preg_replace('/[^a-zA-Z0-9]/', '', (string)($b['code'] ?? $b['token'] ?? $b['invite_token'] ?? ''));
+        $actor = AuthContext::userId($r, $b);
+        if ($actor === '') $actor = strtolower(trim((string)($b['actor_id'] ?? '')));
+        if ($sid === '' || $code === '') return ApiEnvelope::error('space_id and code required', 422);
+        $auth = $this->assertActor($sid, $actor, 'admin');
+        if ($auth !== true) return $auth;
+        $rec = $this->store()->get("invites/{$code}.json");
+        if (!is_array($rec) || (string)($rec['space_id'] ?? '') !== $sid) {
+            return ApiEnvelope::error('invite not found', 404);
+        }
+        $rec['revoked'] = true;
+        $rec['revoked_ms'] = ApiEnvelope::nowMs();
+        $rec['revoked_by'] = $actor;
+        $this->store()->put("invites/{$code}.json", $rec);
+        $this->audit($sid, $actor, 'invite_revoke', $code);
+        return ApiEnvelope::ok(['revoked' => true, 'code' => $code, 'space_id' => $sid]);
+    }
+
+    /** Admin/mod: mute a member in a space for a duration (ms). */
+    public function muteMember(Request $r): JsonResponse {
+        $b = $r->json() ?? [];
+        $sid = (string)($b['space_id'] ?? '');
+        $uid = strtolower(trim((string)($b['user_id'] ?? $b['target_id'] ?? $b['username'] ?? '')));
+        $actor = AuthContext::userId($r, $b);
+        if ($actor === '') $actor = strtolower(trim((string)($b['actor_id'] ?? '')));
+        if ($sid === '' || $uid === '') return ApiEnvelope::error('space_id and user_id required', 422);
+        $row = $this->store()->get("users/{$uid}.json");
+        if (!is_array($row)) $row = $this->store()->get("identity/usernames/{$uid}.json");
+        if (is_array($row) && !empty($row['user_id'])) $uid = strtolower((string)$row['user_id']);
+        $auth = $this->assertActor($sid, $actor, 'mod');
+        if ($auth !== true) return $auth;
+        if ($this->rank($this->roleOf($sid, $uid)) >= $this->rank($this->roleOf($sid, $actor)) && $uid !== $actor) {
+            return ApiEnvelope::error('FORBIDDEN: target rank too high', 403);
+        }
+        $ms = max(0, (int)($b['ms'] ?? $b['duration_ms'] ?? 0));
+        $muted = array_key_exists('muted', $b) ? !empty($b['muted']) : true;
+        $until = ($muted && $ms > 0) ? (ApiEnvelope::nowMs() + $ms) : ($muted ? 0 : 0);
+        $rec = [
+            'space_id' => $sid, 'user_id' => $uid, 'muted' => $muted,
+            'until_ms' => $until, 'muted_by' => $actor, 'updated_ms' => ApiEnvelope::nowMs(),
+            'reason' => (string)($b['reason'] ?? ''),
+        ];
+        if ($muted) {
+            $this->store()->put("mutes/{$sid}/{$uid}.json", $rec);
+        } else {
+            $path = $this->store()->root() . "/mutes/{$sid}/{$uid}.json";
+            if (is_file($path)) @unlink($path);
+        }
+        $this->audit($sid, $actor, $muted ? 'mute_member' : 'unmute_member', $uid, ['until_ms' => $until]);
+        return ApiEnvelope::ok($rec);
     }
 
     public function settings(Request $r): JsonResponse {

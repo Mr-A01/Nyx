@@ -7746,6 +7746,19 @@ const primary = [
   { reactRow: true, emojis: ['👍','❤️','🔥','🎉','😄','🤔','👀','✅'], action: reactAction },
   { sep: true },
   { label: 'Reply', icon: IC.reply, action: () => startReply(m) },
+  { label: 'Tip NYX', icon: IC.star || IC.check || IC.msg, action: async () => {
+    try {
+      if (!(HttpDriver && HttpDriver.token)) { toast('Sign in required', '', 'warn'); return; }
+      const amount = 1;
+      const to = String(m.senderId || m.sender_id || m.from || m.user_id || '').trim();
+      if (!to) { toast('Unknown sender', '', 'warn'); return; }
+      const res = await HttpDriver.req('POST', '/api/v3/ledger/transfer', {
+        to: to, amount: amount, memo: 'tip:' + String(m.id || '').slice(0, 24),
+      });
+      const d = res.data || res;
+      toast('Tipped ' + amount + ' NYX', (d.balance && d.balance.available != null) ? ('Balance ' + d.balance.available) : '', 'ok');
+    } catch (e) { try { apiErrorToast(e); } catch (_e) { toast('Tip failed', String(e.message||e), 'err'); } }
+  } },
   { label: 'Forward', icon: IC.fwd || IC.share || IC.reply, action: async () => {
     try {
       const targets = (A.D.conversations || []).filter(x => x.id !== conv.id && x.type !== 'saved');

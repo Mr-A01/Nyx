@@ -166,6 +166,8 @@ final class Application
             '/api/v1/auth/me',
             '/api/v3/auth/me',
             '/api/v3/spaces/mine',
+            '/api/v3/spaces/admin-summary',
+            '/api/v3/groups/admin-summary',
             '/api/v3/groups/mine',
             '/api/v3/moderation/blocks',
             '/api/v3/push/prefs',

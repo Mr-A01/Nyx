@@ -6336,18 +6336,203 @@ function openGroupProPanel(conv) {
   if (!conv) return;
   const c = NyxGroupPro.conf(conv.id);
   const st = NyxGroupPro.stats(conv);
-  const m = openModal(`<h2>Group tools</h2>
-    <p class="mdesc">${esc(conv.name||conv.id)} · ${st.messages24h} msgs/24h · ${st.members} members</p>
+  const sid = conv.id || conv.space_id || conv.conversation_id;
+  let admin = null;
+  let loadErr = null;
+  const m = openModal(`<h2>Group admin</h2>
+    <p class="mdesc">${esc(conv.name||sid)} · live server tools for owners & moderators</p>
     <div class="seg" id="gp-tabs">
-      <button type="button" class="on" data-t="mod">Moderation</button>
+      <button type="button" class="on" data-t="overview">Overview</button>
+      <button type="button" data-t="members">Members</button>
+      <button type="button" data-t="invites">Invites</button>
+      <button type="button" data-t="bans">Bans</button>
+      <button type="button" data-t="audit">Audit</button>
+      <button type="button" data-t="mod">Local tools</button>
       <button type="button" data-t="perms">Permissions</button>
-      <button type="button" data-t="topics">Topics</button>
-      <button type="button" data-t="stats">Stats</button>
     </div>
-    <div id="gp-body"></div>
-    <div class="mrow"><button class="btn" id="gp-x">Close</button><button class="btn pri" id="gp-save">Save</button></div>`, { wide: true });
+    <div id="gp-body"><div class="hint">Loading admin summary…</div></div>
+    <div class="mrow"><button class="btn" id="gp-x">Close</button><button class="btn pri" id="gp-save">Save local</button><button class="btn" id="gp-refresh">Refresh</button></div>`, { wide: true });
   const body = $('#gp-body', m);
+  const actor = (typeof ACCOUNT_ID !== 'undefined' ? ACCOUNT_ID : '') || '';
+  const api = async (method, path, payload) => {
+    if (!(HttpDriver && HttpDriver.token)) throw new Error('Sign in required');
+    return HttpDriver.req(method, path, payload);
+  };
+  const loadAdmin = async () => {
+    try {
+      const res = await api('GET', '/api/v3/spaces/admin-summary?space_id=' + encodeURIComponent(sid) + '&actor_id=' + encodeURIComponent(actor));
+      admin = res && (res.data || res);
+      loadErr = null;
+    } catch (e) {
+      loadErr = e;
+      admin = null;
+    }
+  };
+  const roleBadge = (role) => `<span class="pill" style="font-size:11px">${esc(role||'member')}</span>`;
   const render = (t) => {
+    if (t === 'overview') {
+      if (loadErr) {
+        body.innerHTML = `<div class="hint">Could not load server admin data. Local tools still work.<br/><code>${esc(String(loadErr.message||loadErr))}</code></div>
+          <div class="kv"><span class="k">Local msgs/24h</span><span class="v">${st.messages24h}</span></div>
+          <div class="kv"><span class="k">Local members</span><span class="v">${st.members}</span></div>`;
+        return;
+      }
+      if (!admin) { body.innerHTML = `<div class="hint">Loading…</div>`; return; }
+      const s = admin.settings || {};
+      body.innerHTML = `
+        <div class="kv"><span class="k">Your role</span><span class="v">${roleBadge(admin.role)}</span></div>
+        <div class="kv"><span class="k">Members</span><span class="v">${admin.member_count||0}</span></div>
+        <div class="kv"><span class="k">Active invites</span><span class="v">${admin.invite_count||0}</span></div>
+        <div class="kv"><span class="k">Bans</span><span class="v">${admin.ban_count||0}</span></div>
+        <h3 style="margin-top:14px">Server settings</h3>
+        <div class="field"><label>Join mode</label>
+          <select class="input" id="gp-join-mode">
+            <option value="open" ${s.join_mode==='open'?'selected':''}>Open</option>
+            <option value="approval" ${s.join_mode==='approval'?'selected':''}>Approval required</option>
+            <option value="invite_only" ${s.join_mode==='invite_only'?'selected':''}>Invite only</option>
+          </select></div>
+        <div class="field"><label>Slow mode (seconds)</label><input class="input" id="gp-server-sm" type="number" min="0" max="3600" value="${Number(s.slow_mode_sec||0)}"/></div>
+        <div class="field"><label>Max members (0 = unlimited)</label><input class="input" id="gp-max-mem" type="number" min="0" value="${Number(s.max_members||0)}"/></div>
+        <div class="mrow"><button class="btn pri" id="gp-save-server">Save server settings</button></div>
+        <div class="hint">Changes apply across the NYX mesh for this group.</div>`;
+      $('#gp-save-server', m).onclick = async () => {
+        const btn = $('#gp-save-server', m);
+        try {
+          setBtnLoad(btn, true, 'Saving…');
+          await api('POST', '/api/v3/spaces/settings', {
+            space_id: sid, actor_id: actor, user_id: actor,
+            join_mode: $('#gp-join-mode', m).value,
+            slow_mode_sec: Number($('#gp-server-sm', m).value||0),
+            max_members: Number($('#gp-max-mem', m).value||0),
+          });
+          toast('Server settings saved', '', 'ok');
+          await loadAdmin(); render('overview');
+        } catch (e) { apiErrorToast(e); }
+        finally { setBtnLoad(btn, false); }
+      };
+      return;
+    }
+    if (t === 'members') {
+      if (!admin) { body.innerHTML = `<div class="hint">${loadErr?esc(String(loadErr.message||loadErr)):'Loading…'}</div>`; return; }
+      const rows = (admin.members||[]).map(mem => {
+        const uid = mem.user_id || mem.id || '';
+        const name = mem.display_name || mem.displayName || mem.username || uid;
+        const role = mem.role || 'member';
+        return `<div class="setrow" data-uid="${esc(uid)}">
+          <div class="sri"><div class="srt">${esc(name)}</div><div class="srs">@${esc(mem.username||uid)} · ${roleBadge(role)}</div></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <select class="input" style="width:auto;min-width:100px" data-role-for="${esc(uid)}">
+              ${['owner','admin','mod','member','readonly'].map(r=>`<option value="${r}" ${r===role?'selected':''}>${r}</option>`).join('')}
+            </select>
+            <button class="btn sm" data-act="role" data-uid="${esc(uid)}">Set</button>
+            <button class="btn sm" data-act="mute" data-uid="${esc(uid)}">Mute 1h</button>
+            <button class="btn sm" data-act="kick" data-uid="${esc(uid)}">Kick</button>
+            <button class="btn sm" data-act="ban" data-uid="${esc(uid)}">Ban</button>
+          </div></div>`;
+      }).join('') || '<div class="hint">No members loaded.</div>';
+      body.innerHTML = rows + `<div class="hint" style="margin-top:8px">Owner/admin actions are enforced by the server.</div>`;
+      $$('[data-act]', m).forEach(btn => btn.onclick = async () => {
+        const uid = btn.dataset.uid;
+        const act = btn.dataset.act;
+        try {
+          if (act === 'role') {
+            const role = $(`[data-role-for="${CSS.escape(uid)}"]`, m)?.value || 'member';
+            await api('POST', '/api/v3/spaces/set-role', { space_id: sid, user_id: uid, role, actor_id: actor });
+            toast('Role updated', uid, 'ok');
+          } else if (act === 'mute') {
+            await api('POST', '/api/v3/spaces/mute-member', { space_id: sid, user_id: uid, muted: true, ms: 3600000, actor_id: actor });
+            toast('Muted 1 hour', uid, 'ok');
+          } else if (act === 'kick') {
+            await api('POST', '/api/v3/spaces/kick', { space_id: sid, user_id: uid, actor_id: actor });
+            toast('Kicked', uid, 'ok');
+          } else if (act === 'ban') {
+            await api('POST', '/api/v3/spaces/ban', { space_id: sid, user_id: uid, actor_id: actor, reason: 'admin panel' });
+            toast('Banned', uid, 'ok');
+          }
+          await loadAdmin(); render('members');
+        } catch (e) { apiErrorToast(e); }
+      });
+      return;
+    }
+    if (t === 'invites') {
+      if (!admin) { body.innerHTML = `<div class="hint">${loadErr?esc(String(loadErr.message||loadErr)):'Loading…'}</div>`; return; }
+      const list = (admin.invites||[]).map(inv => `
+        <div class="setrow">
+          <div class="sri"><div class="srt"><code>${esc(inv.code||'')}</code></div>
+          <div class="srs">uses ${inv.uses||0}${inv.max_uses?('/'+inv.max_uses):''} · ${inv.expires_at_ms?('exp '+new Date(inv.expires_at_ms).toLocaleString()):'no expiry'}</div></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn sm" data-copy="${esc(inv.invite_url||inv.link||'')}">Copy link</button>
+            <button class="btn sm" data-revoke="${esc(inv.code||'')}">Revoke</button>
+          </div></div>`).join('') || '<div class="hint">No active invite links.</div>';
+      body.innerHTML = `
+        <div class="field"><label>TTL</label>
+          <select class="input" id="gp-inv-ttl">
+            <option value="0">No expiry</option>
+            <option value="3600000">1 hour</option>
+            <option value="86400000" selected>24 hours</option>
+            <option value="604800000">7 days</option>
+          </select></div>
+        <div class="field"><label>Max uses</label>
+          <select class="input" id="gp-inv-max">
+            <option value="0">Unlimited</option>
+            <option value="1">Single use</option>
+            <option value="10" selected>10 uses</option>
+            <option value="50">50 uses</option>
+          </select></div>
+        <div class="mrow"><button class="btn pri" id="gp-inv-create">Create invite link</button></div>
+        <h3 style="margin-top:12px">Active links</h3>${list}`;
+      $('#gp-inv-create', m).onclick = async () => {
+        try {
+          const res = await api('POST', '/api/v3/spaces/invite', {
+            space_id: sid, actor_id: actor,
+            ttl_ms: Number($('#gp-inv-ttl', m).value||0),
+            max_uses: Number($('#gp-inv-max', m).value||0),
+          });
+          const data = res.data || res;
+          const link = data.invite_url || data.link || '';
+          if (link) {
+            try { await navigator.clipboard.writeText(link); } catch (_) {}
+          }
+          toast('Invite created', link ? 'Link copied' : (data.code||''), 'ok');
+          await loadAdmin(); render('invites');
+        } catch (e) { apiErrorToast(e); }
+      };
+      $$('[data-copy]', m).forEach(b => b.onclick = async () => {
+        try { await navigator.clipboard.writeText(b.dataset.copy||''); toast('Copied', '', 'ok'); }
+        catch (_) { toast('Copy failed', b.dataset.copy||'', 'warn'); }
+      });
+      $$('[data-revoke]', m).forEach(b => b.onclick = async () => {
+        try {
+          await api('POST', '/api/v3/spaces/invite/revoke', { space_id: sid, code: b.dataset.revoke, actor_id: actor });
+          toast('Invite revoked', '', 'ok');
+          await loadAdmin(); render('invites');
+        } catch (e) { apiErrorToast(e); }
+      });
+      return;
+    }
+    if (t === 'bans') {
+      if (!admin) { body.innerHTML = `<div class="hint">${loadErr?esc(String(loadErr.message||loadErr)):'Loading…'}</div>`; return; }
+      body.innerHTML = (admin.bans||[]).map(b => `
+        <div class="setrow">
+          <div class="sri"><div class="srt">${esc(b.user_id||'')}</div><div class="srs">${esc(b.reason||'no reason')} · by ${esc(b.banned_by||'')}</div></div>
+          <button class="btn sm" data-unban="${esc(b.user_id||'')}">Unban</button>
+        </div>`).join('') || '<div class="hint">No bans.</div>';
+      $$('[data-unban]', m).forEach(btn => btn.onclick = async () => {
+        try {
+          await api('POST', '/api/v3/spaces/unban', { space_id: sid, user_id: btn.dataset.unban, actor_id: actor });
+          toast('Unbanned', '', 'ok');
+          await loadAdmin(); render('bans');
+        } catch (e) { apiErrorToast(e); }
+      });
+      return;
+    }
+    if (t === 'audit') {
+      if (!admin) { body.innerHTML = `<div class="hint">${loadErr?esc(String(loadErr.message||loadErr)):'Loading…'}</div>`; return; }
+      body.innerHTML = (admin.audit||[]).map(a => `
+        <div class="kv"><span class="k">${esc(a.action||a.type||'event')}</span>
+        <span class="v">${esc(a.actor||a.actor_id||'')} · ${esc(String(a.detail||a.target||'').slice(0,80))}</span></div>`).join('') || '<div class="hint">No audit events yet.</div>';
+      return;
+    }
     if (t === 'mod') {
       body.innerHTML = `
         <div class="setrow"><div class="sri"><div class="srt">Freeze group (read-only)</div></div><button class="switch ${c.freeze?'on':''}" id="gp-freeze"></button></div>
@@ -6359,61 +6544,54 @@ function openGroupProPanel(conv) {
         <div class="field"><label>Banned words (comma)</label><input class="input" id="gp-bw" value="${esc((c.bannedWords||[]).join(', '))}"/></div>
         <div class="field"><label>Welcome message</label><textarea class="input" id="gp-wm" rows="2">${esc(c.welcome||'')}</textarea></div>
         <div class="field"><label>Rules</label><textarea class="input" id="gp-rules" rows="3">${esc(c.rules||'')}</textarea></div>
-        <div class="mrow"><button class="btn sm" id="gp-export-json">Export JSON</button><button class="btn sm" id="gp-export-html">Export HTML</button></div>`;
-      ['#gp-freeze','#gp-ann','#gp-lf','#gp-ds'].forEach(id => { const el=$(id,m); if(el) el.onclick=()=>el.classList.toggle('on'); });
-      $('#gp-export-json', m).onclick = () => nyxDownloadText((conv.name||'group')+'.json', NyxGroupPro.exportHistory(conv, false), 'application/json');
-      $('#gp-export-html', m).onclick = () => nyxDownloadText((conv.name||'group')+'.html', NyxGroupPro.exportHistory(conv, true), 'text/html');
-    } else if (t === 'perms') {
-      body.innerHTML = `<div class="hint">Permission matrix (member / vip / mod)</div>
-        ${['member','vip','mod'].map(role => {
-          const p = c.perms[role] || {};
-          return `<div class="field"><label>${role}</label><div class="seg" data-role="${role}">
-            ${['send','media','links','mentionAll','pin'].map(a =>
-              `<button type="button" data-a="${a}" class="${p[a]!==false?'on':''}">${a}</button>`).join('')}
-          </div></div>`;
-        }).join('')}
-        <div class="field"><label>Temp admin user id</label><input class="input" id="gp-ta" placeholder="username"/><input class="input" id="gp-ta-h" type="number" min="1" value="24" style="width:100px"/> hours
-        <button class="btn sm" id="gp-ta-go">Grant</button></div>`;
+        <div class="hint">Local tools apply in this client; use Overview for mesh-wide server settings.</div>`;
+      $$('.switch', body).forEach(sw => sw.onclick = () => sw.classList.toggle('on'));
+      return;
+    }
+    if (t === 'perms') {
+      const roles = ['owner','admin','mod','member'];
+      const acts = ['post','invite','pin','manage'];
+      body.innerHTML = roles.map(role => {
+        const p = (c.perms&&c.perms[role])||{};
+        return `<div class="setrow" data-role="${role}"><div class="sri"><div class="srt">${role}</div></div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">${acts.map(a=>`<button type="button" class="btn sm ${p[a]?'on':''}" data-a="${a}">${a}</button>`).join('')}</div></div>`;
+      }).join('') + `<div class="hint">Local permission matrix (client-side policy hints).</div>`;
       $$('[data-role] button', m).forEach(b => b.onclick = () => b.classList.toggle('on'));
-      $('#gp-ta-go', m).onclick = () => {
-        const u = ($('#gp-ta', m).value||'').trim().toLowerCase();
-        const h = Number($('#gp-ta-h', m).value||24);
-        if (!u) return;
-        c.tempAdmins[u] = Date.now() + h * 3600000;
-        toast('Temp admin', u + ' for ' + h + 'h', 'ok');
-      };
-    } else if (t === 'topics') {
-      body.innerHTML = `<div class="field"><label>Topics (one per line)</label><textarea class="input" id="gp-topics" rows="5">${esc((c.topics||[]).join('\\n'))}</textarea></div>
-        <div class="hint">Topics filter the timeline when selected in the chat header.</div>`;
-    } else {
-      body.innerHTML = `<div class="kv"><span class="k">Messages (24h)</span><span class="v">${st.messages24h}</span></div>
-        <div class="kv"><span class="k">Members</span><span class="v">${st.members}</span></div>
-        <h3 style="margin-top:12px">Top active</h3>
-        ${st.top.map(x => `<div class="kv"><span class="k">${esc(x.name)}</span><span class="v">${x.n}</span></div>`).join('') || '<div class="hint">No data</div>'}`;
+      return;
     }
   };
-  render('mod');
-  $$('#gp-tabs button', m).forEach(b => b.onclick = () => {
-    $$('#gp-tabs button', m).forEach(x => x.classList.remove('on')); b.classList.add('on'); render(b.dataset.t);
-  });
+  const bindTabs = () => {
+    $$('#gp-tabs button', m).forEach(b => b.onclick = () => {
+      $$('#gp-tabs button', m).forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      render(b.dataset.t);
+    });
+  };
+  bindTabs();
   $('#gp-x', m).onclick = closeModal;
+  $('#gp-refresh', m).onclick = async () => {
+    body.innerHTML = `<div class="hint">Refreshing…</div>`;
+    await loadAdmin();
+    const on = $('#gp-tabs button.on', m);
+    render(on ? on.dataset.t : 'overview');
+  };
   $('#gp-save', m).onclick = () => {
     if ($('#gp-freeze', m)) {
       c.freeze = $('#gp-freeze', m).classList.contains('on');
       c.announcement = $('#gp-ann', m).classList.contains('on');
+      c.antiSpam = c.antiSpam || {};
       c.antiSpam.linkFilter = $('#gp-lf', m).classList.contains('on');
       c.dynamicSlowmode = $('#gp-ds', m).classList.contains('on');
       c.slowmodeBase = Number($('#gp-sm', m).value || 0);
       c.antiSpam.newMemberMuteSec = Number($('#gp-nm', m).value || 0);
-      c.bannedWords = ($('#gp-bw', m).value || '').split(/[,\\n]/).map(s=>s.trim()).filter(Boolean);
+      c.bannedWords = ($('#gp-bw', m).value || '').split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
       c.welcome = ($('#gp-wm', m).value || '').trim();
       c.rules = ($('#gp-rules', m).value || '').trim();
     }
-    if ($('#gp-topics', m)) {
-      c.topics = ($('#gp-topics', m).value || '').split('\\n').map(s=>s.trim()).filter(Boolean);
-    }
     $$('[data-role]', m).forEach(row => {
       const role = row.getAttribute('data-role');
+      if (!role) return;
+      c.perms = c.perms || {};
       c.perms[role] = c.perms[role] || {};
       $$('button', row).forEach(b => { c.perms[role][b.dataset.a] = b.classList.contains('on'); });
     });
@@ -6421,15 +6599,20 @@ function openGroupProPanel(conv) {
     try {
       if (HttpDriver && HttpDriver.token) {
         HttpDriver.req('POST', '/api/v3/spaces/settings', {
-          space_id: conv.id, user_id: ACCOUNT_ID, actor_id: ACCOUNT_ID,
-          slowmode_sec: c.slowmodeBase, announcement: c.announcement, freeze: c.freeze,
+          space_id: sid, user_id: actor, actor_id: actor,
+          slow_mode_sec: c.slowmodeBase, announcement: c.announcement, freeze: c.freeze,
           welcome: c.welcome, rules: c.rules,
         }).catch(()=>{});
       }
     } catch (e) {}
-    closeModal(); toast('Group settings saved', '', 'ok');
+    toast('Local group settings saved', '', 'ok');
   };
+  (async () => {
+    await loadAdmin();
+    render('overview');
+  })();
 }
+
 
 function openChannelProPanel(conv) {
   if (!conv) return;
@@ -10364,7 +10547,18 @@ storage: `<div class="setsec"><h3>Local data</h3><div class="sd">Device-scoped k
 </div></div><div class="setsec"><h3>Attachments</h3><div class="sd">Uploads stay in-browser (object URLs, revoked on removal/deletion/sign-out).</div><div class="kv"><span class="k">Size limit</span><span class="v">25 MB</span></div><div class="kv"><span class="k">Rejected types</span><span class="v">html · svg · scripts · executables</span></div><div class="kv"><span class="k">Voice format</span><span class="v">${esc(Voice.pickMime() || 'browser default')}</span></div></div>`,
 network: `<div class="setsec"><h3>API connection</h3><div class="sd">Connect a real NYX server implementing the documented contract. Tokens are MEMORY-ONLY.</div><div class="kv"><span class="k">Active driver</span><span class="v" style="color:${NyxApi.mode === 'live' ? 'var(--ok)' : 'var(--warn)'}">${NyxApi.mode === 'live' ? 'LIVE API' : 'DEMO ADAPTER'}</span></div><div class="field" style="margin-top:12px"><label for="api-base">API base URL</label><input class="input mono" id="api-base" type="url" placeholder="https://nyx.example.com/api/v1" value="${esc(prefs.apiBase || '')}" autocomplete="off"/></div><div class="field"><label for="api-token">Bearer token <span style="color:var(--text-3)">(memory-only)</span></label><input class="input mono" id="api-token" type="password" placeholder="••••••••" autocomplete="off"/></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri sm" id="api-connect">${IC.plug} Test & connect</button>
 ${NyxApi.mode === 'live' ? `<button class="btn sm" id="api-disc">Disconnect (use demo)</button>` : ''}
-</div><div class="hint" id="api-result" role="status"></div></div><div class="setsec"><h3>Transport diagnostics</h3><div class="sd">Real values — nothing invented. No secrets included.</div><div class="kv"><span class="k">Status</span><span class="v">${Net.status}</span></div><div class="kv"><span class="k">Endpoint</span><span class="v">${NyxApi.mode === 'live' ? esc(HttpDriver.base) : 'nyx-berlin-01 (simulated)'}</span></div><div class="kv"><span class="k">Last sync</span><span class="v">${new Date(Net.lastSync).toLocaleTimeString()}</span></div><div class="kv"><span class="k">Measured RTT</span><span class="v" id="net-rtt">${Net._rtt != null ? Net._rtt + ' ms' : '—'}</span></div><div class="kv"><span class="k">Queued offline sends</span><span class="v">${Net.queueSize}</span></div><div class="kv"><span class="k">Failed messages</span><span class="v">${countFailed()}</span></div><div class="kv"><span class="k">Malformed events rejected</span><span class="v">${Net.rejectedEvents}</span></div><div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn sm" id="net-ping">${IC.activity} Measure RTT</button><button class="btn sm" id="net-diag">${IC.copy} Copy diagnostics</button><button class="btn sm dgr" id="net-drop">${IC.wifi} Simulate disconnect</button><button class="btn sm pri" id="net-recon">${IC.refresh} Reconnect & resync</button></div></div>`,
+</div><div class="hint" id="api-result" role="status"></div></div><div class="setsec"><h3>Transport diagnostics</h3><div class="sd">Real values — nothing invented. No secrets included.</div><div class="kv"><span class="k">Status</span><span class="v">${Net.status}</span></div><div class="kv"><span class="k">Endpoint</span><span class="v">${NyxApi.mode === 'live' ? esc(HttpDriver.base) : 'nyx-berlin-01 (simulated)'}</span></div><div class="kv"><span class="k">Last sync</span><span class="v">${new Date(Net.lastSync).toLocaleTimeString()}</span></div><div class="kv"><span class="k">Measured RTT</span><span class="v" id="net-rtt">${Net._rtt != null ? Net._rtt + ' ms' : '—'}</span></div><div class="kv"><span class="k">Queued offline sends</span><span class="v">${Net.queueSize}</span></div><div class="kv"><span class="k">Failed messages</span><span class="v">${countFailed()}</span></div><div class="kv"><span class="k">Malformed events rejected</span><span class="v">${Net.rejectedEvents}</span></div><div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn sm" id="net-ping">${IC.activity} Measure RTT</button><button class="btn sm" id="net-diag">${IC.copy} Copy diagnostics</button><button class="btn sm dgr" id="net-drop">${IC.wifi} Simulate disconnect</button><button class="btn sm pri" id="net-recon">${IC.refresh} Reconnect & resync</button></div></div>
+<div class="setsec"><h3>NYX credits & mining</h3><div class="sd">Earn NYX for useful relay work. Balance is off-chain ledger; sealed on the work-chain.</div>
+<div class="kv"><span class="k">Balance</span><span class="v" id="nyx-bal">—</span></div>
+<div class="kv"><span class="k">Chain height</span><span class="v" id="nyx-chain">—</span></div>
+<div class="kv"><span class="k">Miner status</span><span class="v" id="nyx-miner">—</span></div>
+<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+<button class="btn sm" id="nyx-refresh-eco">Refresh</button>
+<button class="btn sm" id="nyx-mine-reg">Register miner</button>
+<button class="btn sm pri" id="nyx-mine-tick">Claim node tick</button>
+<button class="btn sm" id="nyx-faucet">Welcome faucet</button>
+</div>
+<div class="hint" id="nyx-eco-hint">Requires live session. Tips from chat use the same ledger.</div></div>`,
 accessibility: `<div class="setsec"><h3>Accessibility</h3><div class="sd">WCAG 2.2 AA targets.</div>
 ${sw('reducedMotion', 'Reduce motion', 'Honors prefers-reduced-motion regardless.', 'device')}
 <div class="kv"><span class="k">Keyboard navigation</span><span class="v" style="color:var(--ok)">full · ⌘K, /, ↑↓, Shift+F10</span></div><div class="kv"><span class="k">Screen reader</span><span class="v" style="color:var(--ok)">aria-live · send states announced</span></div><div class="kv"><span class="k">Color-only status</span><span class="v" style="color:var(--ok)">never — icons & labels paired</span></div></div>`,
@@ -10737,6 +10931,41 @@ catch (e) { openModal(`<h2>Diagnostics</h2><pre class="mono" style="font-size:10
 };
 const nd = $('#net-drop', root); if (nd) nd.onclick = () => { Net.drop(); renderMain(); toast('Disconnected (simulated)', 'Sends queue; drafts preserved.', 'warn'); };
 const nr = $('#net-recon', root); if (nr) nr.onclick = async () => { setBtnLoad(nr, true, 'Reconnecting…'); await Net.reconnect(); setBtnLoad(nr, false); renderMain(); renderConvList(); toast('Reconnected', 'Resynchronized · queue flushed.', 'ok'); };
+const refreshEco = async () => {
+  const bal = $('#nyx-bal', root), ch = $('#nyx-chain', root), mn = $('#nyx-miner', root), hint = $('#nyx-eco-hint', root);
+  if (!HttpDriver || !HttpDriver.token) { if (hint) hint.textContent = 'Sign in for credits & mining.'; return; }
+  try {
+    const [b, t, s] = await Promise.all([
+      HttpDriver.req('GET', '/api/v3/ledger/me'),
+      HttpDriver.req('GET', '/api/v3/chain/tip'),
+      HttpDriver.req('GET', '/api/v3/mining/status'),
+    ]);
+    const bd = b.data || b, td = t.data || t, sd = s.data || s;
+    if (bal) bal.textContent = String((bd.available != null ? bd.available : '—')) + ' ' + (bd.currency || 'NYX');
+    if (ch) ch.textContent = String(td.height != null ? td.height : '—') + (td.tip_hash ? ' · ' + String(td.tip_hash).slice(0, 12) + '…' : '');
+    if (mn) mn.textContent = sd.miner ? ('registered · earned ' + (sd.miner.total_earned || 0)) : 'not registered';
+    if (hint) hint.textContent = 'Rates: probe/heartbeat/relay · daily cap ' + (sd.max_claim_per_day || 5000);
+  } catch (e) { if (hint) hint.textContent = String(e.message || e); }
+};
+if ($('#nyx-refresh-eco', root)) { $('#nyx-refresh-eco', root).onclick = refreshEco; refreshEco(); }
+if ($('#nyx-mine-reg', root)) $('#nyx-mine-reg', root).onclick = async () => {
+  try { await HttpDriver.req('POST', '/api/v3/mining/register', {}); toast('Miner registered', '', 'ok'); refreshEco(); }
+  catch (e) { apiErrorToast(e); }
+};
+if ($('#nyx-mine-tick', root)) $('#nyx-mine-tick', root).onclick = async () => {
+  const btn = $('#nyx-mine-tick', root); setBtnLoad(btn, true, 'Mining…');
+  try {
+    const res = await HttpDriver.req('POST', '/api/v3/mining/tick', {});
+    const d = res.data || res;
+    toast('Reward ' + (d.reward || 0) + ' NYX', d.block ? ('block ' + d.block.height) : '', 'ok');
+    refreshEco();
+  } catch (e) { apiErrorToast(e); }
+  finally { setBtnLoad(btn, false); }
+};
+if ($('#nyx-faucet', root)) $('#nyx-faucet', root).onclick = async () => {
+  try { const res = await HttpDriver.req('POST', '/api/v3/ledger/faucet', {}); const d = res.data || res; toast(d.claimed ? ('Granted ' + d.grant) : 'Already claimed', '', 'ok'); refreshEco(); }
+  catch (e) { apiErrorToast(e); }
+};
 const st = $('#st-tests', root); if (st) st.onclick = runChecks;
 const sr = $('#st-reload', root); if (sr) sr.onclick = () => boot(true);
 }

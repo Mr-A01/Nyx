@@ -6,6 +6,7 @@ namespace Nyx\Modules\Chain\Presentation\Http\Controllers;
 use Nyx\Core\Http\Request;
 use Nyx\Core\Http\JsonResponse;
 use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
+use Nyx\Shared\Infrastructure\Http\AuthContext;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 use Nyx\Modules\Chain\Domain\LocalChain;
 
@@ -22,11 +23,14 @@ final class ChainController
         $tip = $c->tip();
         $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? 'node'));
         return ApiEnvelope::ok([
-            'network' => 'nyx-work-chain',
+            'network' => LocalChain::NETWORK,
+            'version' => LocalChain::VERSION,
             'node' => $host,
             'height' => (int)$tip['height'],
             'tip_hash' => (string)$tip['tip_hash'],
+            'total_work' => (int)($tip['total_work'] ?? 0),
             'updated_ms' => (int)($tip['updated_ms'] ?? 0),
+            'last_type' => $tip['last_type'] ?? null,
         ]);
     }
 
@@ -43,10 +47,45 @@ final class ChainController
         return ApiEnvelope::ok($b);
     }
 
+    public function range(Request $r): JsonResponse
+    {
+        $from = (int)($r->query('from') ?? ($r->json()['from'] ?? 1));
+        $to = (int)($r->query('to') ?? ($r->json()['to'] ?? 0));
+        $max = max(1, min(100, (int)($r->query('max') ?? 50)));
+        if ($to < 1) {
+            $to = (int)$this->chain()->tip()['height'];
+        }
+        $blocks = $this->chain()->range($from, $to, $max);
+        return ApiEnvelope::ok([
+            'from' => $from,
+            'to' => $to,
+            'count' => count($blocks),
+            'blocks' => $blocks,
+        ]);
+    }
+
     public function verify(Request $r): JsonResponse
     {
-        $depth = max(1, min(128, (int)($r->query('depth') ?? 32)));
+        $depth = (int)($r->query('depth') ?? ($r->json()['depth'] ?? 64));
+        // depth=0 → full chain
+        if ($depth < 0) {
+            $depth = 64;
+        }
         return ApiEnvelope::ok($this->chain()->verifyTip($depth));
+    }
+
+    public function stats(Request $r): JsonResponse
+    {
+        return ApiEnvelope::ok($this->chain()->stats());
+    }
+
+    public function reindex(Request $r): JsonResponse
+    {
+        $uid = AuthContext::userId($r);
+        if ($uid === '') {
+            return ApiEnvelope::error('unauthorized', 401);
+        }
+        return ApiEnvelope::ok($this->chain()->reindex());
     }
 
     /** Accept peer tip announcements (mesh observability, not full consensus). */
@@ -68,6 +107,8 @@ final class ChainController
             'node' => $peer,
             'height' => $height,
             'tip_hash' => substr($tip, 0, 64),
+            'total_work' => (int)($b['total_work'] ?? 0),
+            'version' => (int)($b['version'] ?? LocalChain::VERSION),
             'seen_ms' => ApiEnvelope::nowMs(),
             'url' => substr((string)($b['url'] ?? ''), 0, 200),
         ];
@@ -94,6 +135,8 @@ final class ChainController
             'local' => [
                 'height' => (int)$local['height'],
                 'tip_hash' => (string)$local['tip_hash'],
+                'total_work' => (int)($local['total_work'] ?? 0),
+                'version' => LocalChain::VERSION,
                 'node' => strtolower((string)($_SERVER['HTTP_HOST'] ?? '')),
             ],
             'peers' => $items,
@@ -111,15 +154,21 @@ final class ChainController
             'node' => $host,
             'height' => (int)$tip['height'],
             'tip_hash' => (string)$tip['tip_hash'],
+            'total_work' => (int)($tip['total_work'] ?? 0),
+            'version' => LocalChain::VERSION,
             'url' => 'https://' . $host . '/nyx',
         ]);
         $topo = $store->get('topology/nodes.json');
         $nodes = is_array($topo['nodes'] ?? null) ? $topo['nodes'] : [];
         $results = [];
         foreach (array_slice($nodes, 0, 12) as $n) {
-            if (!is_array($n)) continue;
+            if (!is_array($n)) {
+                continue;
+            }
             $base = rtrim((string)($n['url'] ?? ''), '/');
-            if ($base === '' || str_contains($base, $host)) continue;
+            if ($base === '' || str_contains($base, $host)) {
+                continue;
+            }
             $url = $base . '/api/v3/chain/gossip';
             $ch = curl_init($url);
             curl_setopt_array($ch, [
@@ -130,12 +179,11 @@ final class ChainController
                 CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json'],
                 CURLOPT_POSTFIELDS => $payload,
             ]);
-            $body = curl_exec($ch);
+            curl_exec($ch);
             $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
             $results[] = ['url' => $url, 'http' => $code, 'ok' => $code >= 200 && $code < 300];
         }
         return ApiEnvelope::ok(['announced' => count($results), 'local' => $tip, 'results' => $results]);
     }
-
 }

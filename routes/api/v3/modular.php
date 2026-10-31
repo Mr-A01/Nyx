@@ -465,3 +465,12 @@ $router->get('/api/v3/chain/tip', [$chain, 'tip']);
 $router->get('/api/v3/chain/block', [$chain, 'block']);
 $router->get('/api/v3/chain/verify', [$chain, 'verify']);
 
+$router->post('/api/v3/chain/gossip', [$chain, 'gossip']);
+$router->get('/api/v3/chain/mesh', [$chain, 'mesh']);
+$router->post('/api/v3/chain/announce', [$chain, 'announce']);
+$router->post('/api/v3/mining/cron-token', [$mine, 'saveCronToken']);
+$router->post('/api/v3/mining/cron', [$mine, 'cronTick']);
+$router->get('/api/v3/spaces/admin-summary', [$space, 'adminSummary']);
+$router->post('/api/v3/spaces/admin-summary', [$space, 'adminSummary']);
+$router->get('/api/v3/groups/admin-summary', [$space, 'adminSummary']);
+

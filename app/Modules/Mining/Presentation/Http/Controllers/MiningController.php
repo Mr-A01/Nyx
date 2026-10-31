@@ -321,4 +321,52 @@ final class MiningController
         usort($items, static fn($a, $b) => $b['total_earned'] <=> $a['total_earned']);
         return ApiEnvelope::ok(['items' => array_slice($items, 0, 50), 'count' => count($items)]);
     }
+
+    /**
+     * Store a session token for headless miner ticks (cron).
+     * Only the registered node operator may set it; stored under data/mining/.
+     */
+    public function saveCronToken(Request $r): JsonResponse
+    {
+        $uid = AuthContext::userId($r);
+        if ($uid === '') {
+            return ApiEnvelope::error('unauthorized', 401);
+        }
+        $node = $this->store()->get('mining/node.json');
+        if (!is_array($node) || (string)($node['operator_user_id'] ?? '') !== $uid) {
+            return ApiEnvelope::error('not node operator', 403);
+        }
+        $token = AuthContext::bearerToken($r);
+        if ($token === '') {
+            return ApiEnvelope::error('bearer token required', 422);
+        }
+        $this->store()->put('mining/cron_auth.json', [
+            'user_id' => $uid,
+            'token_hint' => substr($token, 0, 6) . '…',
+            'token' => $token,
+            'updated_ms' => ApiEnvelope::nowMs(),
+        ]);
+        return ApiEnvelope::ok(['saved' => true, 'hint' => 'Use tools/miner_tick.php or Authorization bearer on /mining/tick']);
+    }
+
+    /** Headless tick using stored cron token OR bearer. */
+    public function cronTick(Request $r): JsonResponse
+    {
+        $uid = AuthContext::userId($r);
+        if ($uid === '') {
+            $cron = $this->store()->get('mining/cron_auth.json');
+            if (is_array($cron) && !empty($cron['token'])) {
+                $GLOBALS['nyx_auth'] = [
+                    'user_id' => (string)($cron['user_id'] ?? ''),
+                    'token' => (string)$cron['token'],
+                ];
+                $uid = (string)($cron['user_id'] ?? '');
+            }
+        }
+        if ($uid === '') {
+            return ApiEnvelope::error('unauthorized', 401);
+        }
+        return $this->nodeTick($r);
+    }
+
 }

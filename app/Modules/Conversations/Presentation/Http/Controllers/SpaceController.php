@@ -1007,4 +1007,79 @@ public function openDm(Request $r): JsonResponse {
     public function settings(Request $r): JsonResponse {
         return $this->update($r);
     }
+
+    /** Aggregated admin view for owners/mods — one round-trip for client panel. */
+    public function adminSummary(Request $r): JsonResponse
+    {
+        $b = $r->json() ?? [];
+        $sid = (string)($r->query('space_id') ?? ($b['space_id'] ?? ''));
+        $actor = AuthContext::userId($r, $b);
+        if ($actor === '') {
+            $actor = strtolower(trim((string)($b['actor_id'] ?? '')));
+        }
+        if ($sid === '') {
+            return ApiEnvelope::error('space_id required', 422);
+        }
+        $sid = $this->resolveSpaceId($sid);
+        $auth = $this->assertActor($sid, $actor, 'mod');
+        if ($auth !== true) {
+            return $auth;
+        }
+        $space = $this->store()->get("spaces/{$sid}.json") ?? [];
+        $members = $this->membersOf($sid);
+        $bans = [];
+        $bdir = $this->store()->root() . '/bans/' . $sid;
+        if (is_dir($bdir)) {
+            foreach (glob($bdir . '/*.json') ?: [] as $f) {
+                $rec = json_decode((string)@file_get_contents($f), true);
+                if (is_array($rec)) {
+                    $bans[] = $rec;
+                }
+            }
+        }
+        $invites = [];
+        $idir = $this->store()->root() . '/invites';
+        if (is_dir($idir)) {
+            foreach (glob($idir . '/*.json') ?: [] as $f) {
+                if (str_starts_with(basename($f), 'active_')) continue;
+                $rec = json_decode((string)@file_get_contents($f), true);
+                if (!is_array($rec) || (string)($rec['space_id'] ?? '') !== $sid) continue;
+                if (!empty($rec['revoked'])) continue;
+                $invites[] = [
+                    'code' => (string)($rec['code'] ?? ''),
+                    'invite_url' => (string)($rec['invite_url'] ?? $rec['link'] ?? ''),
+                    'uses' => (int)($rec['uses'] ?? 0),
+                    'max_uses' => (int)($rec['max_uses'] ?? 0),
+                    'expires_at_ms' => (int)($rec['expires_at_ms'] ?? 0),
+                    'created_ms' => (int)($rec['created_ms'] ?? 0),
+                ];
+            }
+        }
+        $audit = $this->listAudit($sid, 30);
+        return ApiEnvelope::ok([
+            'space_id' => $sid,
+            'space' => $space,
+            'role' => $this->roleOf($sid, $actor),
+            'members' => $members,
+            'member_count' => count($members),
+            'bans' => $bans,
+            'ban_count' => count($bans),
+            'invites' => $invites,
+            'invite_count' => count($invites),
+            'audit' => $audit,
+            'settings' => [
+                'join_mode' => (string)($space['join_mode'] ?? 'open'),
+                'slow_mode_sec' => (int)($space['slow_mode_sec'] ?? 0),
+                'max_members' => (int)($space['max_members'] ?? 0),
+                'who_can_invite' => (string)($space['who_can_invite'] ?? 'admin'),
+                'who_can_post' => (string)($space['who_can_post'] ?? 'member'),
+                'is_public' => !empty($space['is_public']) || !empty($space['public']),
+            ],
+            'actions' => [
+                'invite', 'revoke_invite', 'kick', 'ban', 'unban', 'mute_member',
+                'set_role', 'transfer', 'update_settings', 'audit',
+            ],
+        ]);
+    }
+
 }

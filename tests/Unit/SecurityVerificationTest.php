@@ -63,6 +63,5 @@ echo "[PASS] PathGuard security guards verified.\n";
 @rmdir($tmp);
 @array_map('unlink', glob("$peerTmp/*") ?: []);
 @rmdir($peerTmp);
-@unlink(__DIR__ . '/SecurityVerificationTest.php');
 
 echo "=== All Security & Crypto Checks Passed Successfully ===\n";

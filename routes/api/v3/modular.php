@@ -453,3 +453,15 @@ $router->post('/api/v3/auth/continue/redeem', [$sec, 'redeemContinueCode']);
 $router->get('/api/v3/ledger/export', [$ledger, 'exportReceipts']);
 $router->post('/api/v3/ledger/export', [$ledger, 'exportReceipts']);
 
+// Work-chain + mining rewards
+$mine = new \Nyx\Modules\Mining\Presentation\Http\Controllers\MiningController();
+$chain = new \Nyx\Modules\Chain\Presentation\Http\Controllers\ChainController();
+$router->get('/api/v3/mining/status', [$mine, 'status']);
+$router->post('/api/v3/mining/register', [$mine, 'register']);
+$router->post('/api/v3/mining/submit', [$mine, 'submitWork']);
+$router->post('/api/v3/mining/tick', [$mine, 'nodeTick']);
+$router->get('/api/v3/mining/leaderboard', [$mine, 'leaderboard']);
+$router->get('/api/v3/chain/tip', [$chain, 'tip']);
+$router->get('/api/v3/chain/block', [$chain, 'block']);
+$router->get('/api/v3/chain/verify', [$chain, 'verify']);
+

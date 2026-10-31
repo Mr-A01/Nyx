@@ -7749,7 +7749,6 @@ const primary = [
   { label: 'Tip NYX', icon: IC.star || IC.check || IC.msg, action: async () => {
     try {
       if (!(HttpDriver && HttpDriver.token)) { toast('Sign in required', '', 'warn'); return; }
-      const amount = 1;
       let to = String(m.senderId || m.sender_id || m.from || m.user_id || m.author_id || m.username || '').trim();
       if (!to && m.sender && typeof m.sender === 'object') {
         to = String(m.sender.id || m.sender.user_id || m.sender.username || '').trim();
@@ -7757,6 +7756,27 @@ const primary = [
       if (!to) { toast('Unknown sender', 'Cannot tip this message', 'warn'); return; }
       const me = String((HttpDriver.username || ACCOUNT_ID || '')).toLowerCase();
       if (String(to).toLowerCase() === me) { toast('Cannot tip yourself', '', 'info'); return; }
+      const amount = await new Promise((resolve) => {
+        try {
+          openModal(`<h2>Tip NYX</h2><p class="mdesc">Send credits to this author from your ledger balance.</p>
+            <div class="mrow" style="flex-wrap:wrap;gap:8px">
+              <button type="button" class="btn pri" data-tip="1">1 NYX</button>
+              <button type="button" class="btn pri" data-tip="5">5 NYX</button>
+              <button type="button" class="btn pri" data-tip="10">10 NYX</button>
+              <button type="button" class="btn" data-tip="0">Cancel</button>
+            </div>`);
+          const root = document.querySelector('.modal, .m-ov, #modal') || document.body;
+          const onClick = (ev) => {
+            const btn = ev.target && ev.target.closest && ev.target.closest('[data-tip]');
+            if (!btn) return;
+            root.removeEventListener('click', onClick);
+            try { closeModal(); } catch (_e) {}
+            resolve(Number(btn.getAttribute('data-tip') || 0));
+          };
+          setTimeout(() => root.addEventListener('click', onClick), 0);
+        } catch (_e) { resolve(1); }
+      });
+      if (!amount || amount < 1) return;
       const res = await HttpDriver.req('POST', '/api/v3/ledger/transfer', {
         to: to, amount: amount, memo: 'tip:' + String(m.id || '').slice(0, 24),
       });
@@ -10045,7 +10065,7 @@ if (conv.type === 'channel' || conv.type === 'group') {
   const join = $('#adm-join .on', rp)?.dataset.j;
   if (join) patch.join_mode = join;
   const slow = $('#adm-slow .on', rp)?.dataset.s;
-  if (slow != null) patch.slowmode_sec = Number(slow) || 0;
+  if (slow != null) { patch.slowmode_sec = Number(slow) || 0; patch.slow_mode_sec = Number(slow) || 0; }
   const hist = $('#adm-hist .on', rp)?.dataset.h;
   if (hist != null) patch.history_visible = hist === '1';
   const cm = $('#adm-comments .on', rp)?.dataset.cm;
@@ -10576,6 +10596,7 @@ ${NyxApi.mode === 'live' ? `<button class="btn sm" id="api-disc">Disconnect (use
 <button class="btn sm pri" id="nyx-mine-tick">Claim node tick</button>
 <button class="btn sm" id="nyx-faucet">Welcome faucet</button>
 <button class="btn sm" id="nyx-settle-export">Export settlement batch</button>
+<button class="btn sm" id="nyx-settle-announce">Announce batch to mesh</button>
 </div>
 <div class="kv"><span class="k">Settlement</span><span class="v" id="nyx-settle">—</span></div>
 <div class="hint" id="nyx-eco-hint">Requires live session. Tips from chat use the same ledger.</div></div>`,
@@ -10971,7 +10992,13 @@ const refreshEco = async () => {
       const el = $('#nyx-settle', root);
       if (el) {
         const L = s.latest;
-        el.textContent = L ? (String(L.status) + ' · h' + L.from_height + '-' + L.to_height) : ('ready · chain ' + (s.chain_height || 0));
+        let meshN = '';
+        try {
+          const mesh = await HttpDriver.req('GET', '/api/v3/settlement/mesh');
+          const md = mesh.data || mesh;
+          meshN = ' · mesh ' + (md.count || 0);
+        } catch (_e) {}
+        el.textContent = L ? (String(L.status) + ' · h' + L.from_height + '-' + L.to_height + meshN) : ('ready · chain ' + (s.chain_height || 0) + meshN);
       }
     } catch (_e) {}
   } catch (e) { if (hint) hint.textContent = String(e.message || e); }
@@ -10994,6 +11021,17 @@ if ($('#nyx-mine-tick', root)) $('#nyx-mine-tick', root).onclick = async () => {
 if ($('#nyx-faucet', root)) $('#nyx-faucet', root).onclick = async () => {
   try { const res = await HttpDriver.req('POST', '/api/v3/ledger/faucet', {}); const d = res.data || res; toast(d.claimed ? ('Granted ' + d.grant) : 'Already claimed', '', 'ok'); refreshEco(); }
   catch (e) { apiErrorToast(e); }
+};
+if ($('#nyx-settle-announce', root)) $('#nyx-settle-announce', root).onclick = async () => {
+  const btn = $('#nyx-settle-announce', root); setBtnLoad(btn, true, 'Announcing…');
+  try {
+    const res = await HttpDriver.req('POST', '/api/v3/settlement/announce', {});
+    const d = res.data || res;
+    const ok = (d.results || []).filter(x => x.ok).length;
+    toast('Announced', ok + '/' + (d.announced || 0) + ' peers', 'ok');
+    refreshEco();
+  } catch (e) { apiErrorToast(e); }
+  finally { setBtnLoad(btn, false); }
 };
 if ($('#nyx-settle-export', root)) $('#nyx-settle-export', root).onclick = async () => {
   const btn = $('#nyx-settle-export', root); setBtnLoad(btn, true, 'Exporting…');

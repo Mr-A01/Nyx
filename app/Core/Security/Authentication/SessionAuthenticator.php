@@ -5,9 +5,11 @@ namespace Nyx\Core\Security\Authentication;
 
 use Nyx\Core\Http\Request;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
+use Nyx\Core\Maintenance\DataGc;
 
 /**
- * Validates Bearer session tokens stored under data/sessions/.
+ * Validates Bearer session tokens under data/sessions/.
+ * Soft device bind via X-Device-Id; set NYX_STRICT_DEVICE_BIND=true to hard-fail mismatch.
  */
 final class SessionAuthenticator
 {
@@ -25,8 +27,6 @@ final class SessionAuthenticator
         if ($auth !== '' && preg_match('/^Bearer\s+(\S+)/i', $auth, $m)) {
             return $m[1];
         }
-        // Fallback headers / query used by some clients
-        // Prefer Authorization Bearer. Optional dedicated headers only (never query/body — log/referrer leaks).
         $alt = (string)($request->header('X-Session-Token') ?? $request->header('X-Auth-Token') ?? '');
         if ($alt !== '' && preg_match('/^[a-f0-9]{32,128}$/i', $alt)) {
             return $alt;
@@ -34,9 +34,7 @@ final class SessionAuthenticator
         return null;
     }
 
-    /**
-     * @return array{token:string,user_id:?string,username:?string,expires_ms:?int}|null
-     */
+    /** @return array<string,mixed>|null */
     public function validate(Request $request): ?array
     {
         $token = $this->extractToken($request);
@@ -48,15 +46,42 @@ final class SessionAuthenticator
             return null;
         }
         $expires = (int)($session['expires_ms'] ?? 0);
-        if ($expires > 0 && $expires < (int)floor(microtime(true) * 1000)) {
+        $nowMs = (int) floor(microtime(true) * 1000);
+        if ($expires > 0 && $expires < $nowMs) {
             $this->store->delete("sessions/{$token}.json");
             return null;
         }
+
+        $bound = strtolower(trim((string)($session['device_id'] ?? '')));
+        $clientDevice = strtolower(trim((string)($request->header('X-Device-Id') ?? '')));
+        $strict = filter_var(getenv('NYX_STRICT_DEVICE_BIND') ?: 'false', FILTER_VALIDATE_BOOLEAN);
+        if ($bound !== '' && $clientDevice !== '' && !hash_equals($bound, $clientDevice)) {
+            if ($strict) {
+                return null;
+            }
+        }
+        if ($bound === '' && $clientDevice !== '' && preg_match('/^[a-zA-Z0-9._\\-:]{4,128}$/', $clientDevice)) {
+            $session['device_id'] = $clientDevice;
+            $session['device_bound_ms'] = $nowMs;
+            $this->store->put("sessions/{$token}.json", $session);
+        }
+        if (random_int(1, 8) === 1) {
+            $session['last_seen_ms'] = $nowMs;
+            $this->store->put("sessions/{$token}.json", $session);
+        }
+        if (random_int(1, 40) === 1) {
+            try {
+                (new DataGc($this->store))->run(30);
+            } catch (\Throwable $e) {
+            }
+        }
+
         return [
             'token' => (string)$session['token'],
             'user_id' => isset($session['user_id']) ? (string)$session['user_id'] : null,
             'username' => isset($session['username']) ? (string)$session['username'] : null,
             'expires_ms' => $expires > 0 ? $expires : null,
+            'device_id' => isset($session['device_id']) ? (string)$session['device_id'] : null,
         ];
     }
 
@@ -69,7 +94,6 @@ final class SessionAuthenticator
         return $session;
     }
 
-    /** Delete a session file (logout / revoke). Returns true if removed. */
     public function revoke(string $token): bool
     {
         $token = trim($token);

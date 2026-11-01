@@ -102,6 +102,7 @@ final class IdentityController
             'user_id' => $uid,
             'username' => $u,
             'created_ms' => ApiEnvelope::nowMs(),
+            'device_id' => strtolower(trim((string)($r->header('X-Device-Id') ?? (($b['device_id'] ?? '') )))),
             'expires_ms' => ApiEnvelope::nowMs() + 86400000 * 30,
         ]);
 
@@ -185,6 +186,7 @@ final class IdentityController
             'user_id' => $row['user_id'] ?? null,
             'username' => $u,
             'created_ms' => ApiEnvelope::nowMs(),
+            'device_id' => strtolower(trim((string)($r->header('X-Device-Id') ?? (($b['device_id'] ?? '') )))),
             'expires_ms' => ApiEnvelope::nowMs() + 86400000 * 30,
         ]);
 

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Nyx\Modules\Settlement\Presentation\Http\Controllers;
 
+use Nyx\Core\Security\Authentication\PeerAuthenticator;
+
 use Nyx\Core\Http\Request;
 use Nyx\Core\Http\JsonResponse;
 use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
@@ -209,6 +211,19 @@ final class SettlementController
     /** Accept peer settlement batch announcement. */
     public function gossip(Request $r): JsonResponse
     {
+        $dataRoot = defined('DATA_DIR') ? DATA_DIR : (defined('NYX_DATA_DIR') ? NYX_DATA_DIR : '');
+        $require = filter_var(getenv('NYX_REQUIRE_PEER_SIG') ?: 'false', FILTER_VALIDATE_BOOLEAN);
+        $b0 = $r->json() ?? [];
+        $sig = (string)($r->header('X-Nyx-Peer-Sig') ?? ($b0['peer_sig'] ?? ''));
+        $nonce = (string)($r->header('X-Nyx-Peer-Nonce') ?? ($b0['peer_nonce'] ?? ''));
+        $rawBody = json_encode($b0, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($require || $sig !== '') {
+            $peerAuth = new PeerAuthenticator($dataRoot);
+            if (!$peerAuth->verifyAndConsume((string)$rawBody, $sig !== '' ? $sig : null, $nonce !== '' ? $nonce : null)) {
+                return ApiEnvelope::error('invalid peer signature', 403);
+            }
+        }
+
         $b = $r->json() ?? [];
         $node = strtolower(preg_replace('/[^a-z0-9.\-]/', '', (string)($b['node'] ?? '')) ?? '');
         $hash = substr((string)($b['content_hash'] ?? ''), 0, 64);

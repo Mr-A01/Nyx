@@ -104,7 +104,7 @@ final class Application
             $path === '/api/v3/auth/login' || $path === '/api/v1/auth/login'
         )) {
             if (!$limiter->hit('auth:' . $ip, 20, 60)) {
-                return JsonResponse::error('rate limit exceeded', 429);
+                return JsonResponse::error('rate limit exceeded', 429);  // finalized below if routed
             }
         }
 
@@ -117,14 +117,14 @@ final class Application
             str_starts_with($path, '/api/v3/federation/')
         )) {
             if (!$limiter->hit('mesh:' . $ip, 60, 60)) {
-                return JsonResponse::error('rate limit exceeded', 429);
+                return JsonResponse::error('rate limit exceeded', 429);  // finalized below if routed
             }
         }
 
         // Global API ceiling per IP
         if (str_starts_with($path, '/api/')) {
             if (!$limiter->hit('api:' . $ip, 240, 60)) {
-                return JsonResponse::error('rate limit exceeded', 429);
+                return JsonResponse::error('rate limit exceeded', 429);  // finalized below if routed
             }
         }
 
@@ -272,13 +272,13 @@ final class Application
             // Core rate limits (shared-hosting friendly file buckets)
             $rate = $this->enforceRateLimits($request, $method, $path);
             if ($rate !== null) {
-                return $rate;
+                return $this->finalizeResponse($request, $rate);
             }
 
             if ($this->requiresAuth($method, $path)) {
                 $auth = (new SessionAuthenticator())->requireUser($request);
                 if ($auth === false) {
-                    return JsonResponse::error('unauthorized', 401);
+                    return $this->finalizeResponse($request, JsonResponse::error('unauthorized', 401));
                 }
                 // Attach session to request server bag for controllers that read it
                 $GLOBALS['nyx_auth'] = $auth;
@@ -295,7 +295,7 @@ final class Application
                         'architecture' => 'modular',
                     ]);
                 }
-                return JsonResponse::error('Not Found', 404);
+                return $this->finalizeResponse($request, JsonResponse::error('Not Found', 404));
             }
 
             $handler = $route['handler'] ?? $route['hand'] ?? null;
@@ -316,17 +316,46 @@ final class Application
             }
 
             if ($result instanceof Response) {
-                return $result;
+                return $this->finalizeResponse($request, $result);
             }
-            return JsonResponse::ok($result);
+            return $this->finalizeResponse($request, JsonResponse::ok($result));
         } catch (\Throwable $e) {
             $debug = (bool)($GLOBALS['nyx_config']['app']['debug'] ?? false);
-            return JsonResponse::error(
+            return $this->finalizeResponse($request, JsonResponse::error(
                 $debug ? $e->getMessage() : 'Internal Server Error',
                 500,
                 $debug ? ['trace' => explode("\n", $e->getTraceAsString())] : null
-            );
+            ));
         }
+    }
+
+    private function finalizeResponse(Request $request, Response $response): Response
+    {
+        // Baseline API headers
+        $response->header('X-Content-Type-Options', 'nosniff');
+        $response->header('Referrer-Policy', 'no-referrer');
+        $response->header('X-Frame-Options', 'DENY');
+        $response->header('Cache-Control', 'no-store');
+
+        // CORS: default same-origin only. Allowlist via NYX_CORS_ORIGINS=origin1,origin2 or *
+        $origin = (string)($request->header('Origin') ?? '');
+        $raw = getenv('NYX_CORS_ORIGINS');
+        if ($raw === false || $raw === null || $raw === '') {
+            $allowed = []; // empty = no ACAO (browser same-origin still works)
+        } else {
+            $allowed = array_values(array_filter(array_map('trim', explode(',', (string)$raw))));
+        }
+        if ($origin !== '' && ($allowed === ['*'] || in_array($origin, $allowed, true))) {
+            $response->header('Access-Control-Allow-Origin', $allowed === ['*'] ? '*' : $origin);
+            $response->header('Vary', 'Origin');
+            if ($allowed !== ['*']) {
+                $response->header('Access-Control-Allow-Credentials', 'true');
+            }
+            $response->header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Id, Accept, X-Nyx-Client, X-Nyx-Peer-Sig, X-Nyx-Peer-Nonce');
+            $response->header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+        }
+
+        return $response;
     }
 
     private function loadConfig(): void

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Nyx\Modules\Chain\Domain;
 
 use Nyx\Shared\Infrastructure\Storage\FileStore;
+use Nyx\Modules\Chain\Domain\NodeOperator;
 
 /**
  * NYX Work-Chain — append-only, hash-linked, Merkle-committed ledger of network work.
@@ -90,6 +91,19 @@ final class LocalChain
         ];
         $body['hash'] = $this->hashBlock($body);
 
+        // Operator Ed25519 signature over block hash (non-repudiation for settlement)
+        try {
+            $op = new NodeOperator($this->store);
+            $body['operator_pk'] = $op->publicKeyHex();
+            $body['operator_sig'] = $op->signHash((string)$body['hash']);
+            $body['operator_alg'] = 'ed25519';
+        } catch (\Throwable $e) {
+            // Shared hosts without sodium should still append; signature optional
+            $body['operator_sig'] = null;
+            $body['operator_pk'] = null;
+            $body['operator_alg'] = null;
+        }
+
         $this->store->put("chain/blocks/{$height}.json", $body);
         $totalWork = (int)($tip['total_work'] ?? 0) + $workScore;
         $this->store->put($this->metaKey(), [
@@ -145,6 +159,14 @@ final class LocalChain
                 $mr = $this->merkleRoot($entries);
                 if (!hash_equals($mr, (string)($b['merkle_root'] ?? ''))) {
                     return ['ok' => false, 'error' => "merkle mismatch at {$i}", 'height' => $h, 'checked' => $checked];
+                }
+            }
+            // Optional operator signature (blocks without sig remain valid for legacy)
+            $sig = (string)($b['operator_sig'] ?? '');
+            $pk = (string)($b['operator_pk'] ?? '');
+            if ($sig !== '' && $pk !== '') {
+                if (!NodeOperator::verifyHash((string)$hash, $sig, $pk)) {
+                    return ['ok' => false, 'error' => "operator signature invalid at {$i}", 'height' => $h, 'checked' => $checked];
                 }
             }
             if ($expectedNextPrev !== null && !hash_equals($hash, $expectedNextPrev)) {
@@ -284,7 +306,18 @@ final class LocalChain
             'updated_ms' => (int)($tip['updated_ms'] ?? 0),
             'recent_types' => $types,
             'node' => strtolower((string)($_SERVER['HTTP_HOST'] ?? '')),
+            'operator_pk' => $this->operatorPublicKeyOrNull(),
+            'operator_alg' => 'ed25519',
         ];
+    }
+
+    private function operatorPublicKeyOrNull(): ?string
+    {
+        try {
+            return (new NodeOperator($this->store))->publicKeyHex();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     /**
@@ -295,7 +328,7 @@ final class LocalChain
     {
         $version = (int)($block['version'] ?? 1);
         $copy = $block;
-        unset($copy['hash']);
+        unset($copy['hash'], $copy['operator_sig'], $copy['operator_pk'], $copy['operator_alg']);
 
         if ($version >= 2) {
             $canonical = [

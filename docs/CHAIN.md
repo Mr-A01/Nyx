@@ -29,3 +29,16 @@ Legacy v1 blocks remain verifiable with the previous hash formula.
 - `GET /api/v3/chain/stats`
 - `POST /api/v3/chain/reindex` (auth)
 - `POST /api/v3/chain/gossip` / `announce` / `GET mesh`
+
+
+## Operator signatures (v2+)
+
+New blocks may include:
+- `operator_pk` — Ed25519 public key (hex, 64 chars)
+- `operator_sig` — detached signature over the 32-byte block hash
+- `operator_alg` — `ed25519`
+
+`GET /api/v3/chain/operator` returns the local node's public key.
+
+Legacy blocks without signatures still verify (hash + merkle only).
+Signed blocks fail verification if the signature does not match.

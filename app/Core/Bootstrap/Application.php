@@ -91,6 +91,7 @@ final class Application
             '/api/v3/chain/verify',
             '/api/v3/chain/range',
             '/api/v3/chain/stats',
+            '/api/v3/chain/operator',
             '/api/v3/chain/gossip',
             '/api/v3/chain/mesh',
             '/api/v3/chain/announce',

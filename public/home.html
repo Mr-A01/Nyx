@@ -1,10 +1,64 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<meta name="theme-color" content="#3B6FD4"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="NYX"/>
+<link rel="apple-touch-icon" href="assets/icons/icon-180.png"/>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/icon-32.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png"/>
+
 <meta http-equiv="refresh" content="0;url=index.html"/>
 <link rel="canonical" href="index.html"/>
 <title>Redirecting to NYX…</title>
 <script>location.replace('index.html'+location.search+location.hash);</script>
 </head><body style="background:#0b1020;color:#8b9bb8;font-family:system-ui;padding:40px">
 <p>Redirecting to <a href="index.html" style="color:#5b8cff">index</a>…</p>
+
+<script>
+(function(){
+  if (!('serviceWorker' in navigator)) return;
+  var refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if (refreshing) return; refreshing = true;
+    // soft reload only when a new SW takes control after update
+  });
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js?v=3', { scope: './' }).then(function(reg){
+      if (reg.waiting) reg.waiting.postMessage('skipWaiting');
+      reg.addEventListener('updatefound', function(){
+        var nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', function(){
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            try { if (typeof toast === 'function') toast('Update ready', 'Reload to apply', 'info'); } catch(e) {}
+          }
+        });
+      });
+    }).catch(function(){});
+  });
+  // Install prompt capture for custom UI
+  window.__nyxDeferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    window.__nyxDeferredPrompt = e;
+    try {
+      var btn = document.getElementById('nyx-install-pwa');
+      if (btn) btn.hidden = false;
+    } catch (err) {}
+  });
+  window.nyxInstallPwa = async function(){
+    var p = window.__nyxDeferredPrompt;
+    if (!p) return false;
+    p.prompt();
+    var r = await p.userChoice;
+    window.__nyxDeferredPrompt = null;
+    return r && r.outcome === 'accepted';
+  };
+})();
+</script>
+
 </body></html>

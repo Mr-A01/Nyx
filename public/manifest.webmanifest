@@ -1,0 +1,27 @@
+{
+  "id": "/nyx/",
+  "name": "NYX Messenger",
+  "short_name": "NYX",
+  "description": "Federated E2EE messenger relay — installable workspace",
+  "start_url": "./client.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "any",
+  "background_color": "#0B0F17",
+  "theme_color": "#3B6FD4",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["social", "communication", "productivity"],
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Open Messenger", "short_name": "Chat", "url": "./client.html", "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Network Status", "short_name": "Status", "url": "./status.html", "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Identity", "short_name": "ID", "url": "./identity.html", "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }] }
+  ],
+  "prefer_related_applications": false
+}

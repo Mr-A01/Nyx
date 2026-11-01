@@ -61,8 +61,19 @@ final class IdentityController
         if ($u === '' || !preg_match('/^[a-z0-9_]{3,32}$/', $u)) {
             return ApiEnvelope::error('invalid username (3-32 chars, a-z 0-9 _)', 422);
         }
-        if (strlen($pw) < 8) {
-            return ApiEnvelope::error('password must be at least 8 characters', 422);
+        if (strlen($pw) < 10) {
+            return ApiEnvelope::error('password must be at least 10 characters', 422);
+        }
+        if (strlen($pw) > 128) {
+            return ApiEnvelope::error('password too long', 422);
+        }
+        $classes = 0;
+        if (preg_match('/[a-z]/', $pw)) $classes++;
+        if (preg_match('/[A-Z]/', $pw)) $classes++;
+        if (preg_match('/[0-9]/', $pw)) $classes++;
+        if (preg_match('/[^a-zA-Z0-9]/', $pw)) $classes++;
+        if ($classes < 2) {
+            return ApiEnvelope::error('password needs at least 2 of: lower, upper, digit, symbol', 422);
         }
         if ($this->store()->get("identity/usernames/{$u}.json")) {
             return ApiEnvelope::error('username taken', 409);
@@ -145,16 +156,28 @@ final class IdentityController
             return ApiEnvelope::error('password required', 401);
         }
 
+        $lockKey = 'rate/auth/lock/' . hash('sha256', $u) . '.json';
+        $lock = $this->store()->get($lockKey);
+        $now = time();
+        if (is_array($lock) && (int)($lock['until'] ?? 0) > $now) {
+            $wait = (int)$lock['until'] - $now;
+            return ApiEnvelope::error('account temporarily locked', 423, ['retry_after_sec' => $wait]);
+        }
+
         $row = $this->store()->get("identity/usernames/{$u}.json");
         // Constant-time style: always hash something if missing to reduce timing signal
         if (!$row || empty($row['password_hash'])) {
             password_verify($pw, '$2y$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUV'); // dummy
+            $this->recordLoginFailure($lockKey, $now);
             return ApiEnvelope::error('invalid credentials', 401);
         }
 
         if (!password_verify($pw, (string)$row['password_hash'])) {
+            $this->recordLoginFailure($lockKey, $now);
             return ApiEnvelope::error('invalid credentials', 401);
         }
+
+        $this->store()->delete($lockKey);
 
         $token = bin2hex(random_bytes(24));
         $this->store()->put("sessions/{$token}.json", [
@@ -206,5 +229,19 @@ final class IdentityController
             $this->store()->delete("sessions/{$token}.json");
         }
         return ApiEnvelope::ok(['logged_out' => true]);
+    }
+
+    private function recordLoginFailure(string $lockKey, int $now): void
+    {
+        $row = $this->store()->get($lockKey);
+        $fails = 1;
+        if (is_array($row) && (int)($row['window'] ?? 0) > $now) {
+            $fails = (int)($row['fails'] ?? 0) + 1;
+        }
+        $rec = ['fails' => $fails, 'window' => $now + 900, 'until' => 0];
+        if ($fails >= 8) {
+            $rec['until'] = $now + 900;
+        }
+        $this->store()->put($lockKey, $rec);
     }
 }

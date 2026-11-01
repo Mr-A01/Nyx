@@ -6,24 +6,34 @@ namespace Nyx\Shared\Infrastructure\Http;
 use Nyx\Core\Http\Request;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 
-/** Resolve authenticated user id from middleware session, Bearer token, or request fields. */
+/**
+ * Resolves the authenticated user from a validated session only.
+ * Never trusts client-supplied user_id / from / me fields for identity.
+ */
 final class AuthContext
 {
     public static function userId(?Request $r = null, array $body = []): string
     {
-        $fromSession = (string)(($GLOBALS['nyx_auth']['user_id'] ?? '') ?: '');
-        if ($fromSession !== '') {
-            return $fromSession;
+        // 1) Session attached by Application after SessionAuthenticator
+        $fromGlobal = (string)(($GLOBALS['nyx_auth']['user_id'] ?? '') ?: '');
+        if ($fromGlobal !== '') {
+            return strtolower($fromGlobal);
         }
 
-        // Bearer token → sessions/{token}.json
+        // 2) Validate bearer session against store
         $token = self::bearerToken($r);
-        if ($token !== '') {
+        if ($token !== '' && preg_match('/^[a-f0-9]{32,128}$/i', $token)) {
             try {
-                $store = new FileStore(defined('DATA_DIR') ? DATA_DIR : '');
+                $root = defined('DATA_DIR') ? DATA_DIR : (defined('NYX_DATA_DIR') ? NYX_DATA_DIR : '');
+                $store = new FileStore($root);
                 $sess = $store->get('sessions/' . $token . '.json');
                 if (is_array($sess)) {
-                    $uid = (string)($sess['user_id'] ?? $sess['uid'] ?? '');
+                    $expires = (int)($sess['expires_ms'] ?? 0);
+                    if ($expires > 0 && $expires < (int)floor(microtime(true) * 1000)) {
+                        $store->delete('sessions/' . $token . '.json');
+                        return '';
+                    }
+                    $uid = strtolower((string)($sess['user_id'] ?? $sess['uid'] ?? ''));
                     if ($uid !== '') {
                         $GLOBALS['nyx_auth'] = array_merge(
                             is_array($GLOBALS['nyx_auth'] ?? null) ? $GLOBALS['nyx_auth'] : [],
@@ -37,35 +47,17 @@ final class AuthContext
                     }
                 }
             } catch (\Throwable $e) {
-                // ignore
+                return '';
             }
         }
 
-        if ($r !== null) {
-            $q = (string)($r->query('user_id') ?? '');
-            if ($q !== '') {
-                return $q;
-            }
-            $json = $r->json() ?? [];
-            foreach (['user_id', 'sender_id', 'from', 'me'] as $k) {
-                if (!empty($json[$k]) && is_string($json[$k])) {
-                    return (string)$json[$k];
-                }
-            }
-        }
-        foreach (['user_id', 'sender_id', 'from', 'me'] as $k) {
-            if (!empty($body[$k]) && is_string($body[$k])) {
-                return (string)$body[$k];
-            }
-        }
+        // Intentionally NO fallback to body/query user_id — that was an impersonation vector.
         return '';
     }
 
     public static function username(): string
     {
-        $u = (string)(($GLOBALS['nyx_auth']['username'] ?? '') ?: '');
-        if ($u !== '') return $u;
-        return '';
+        return (string)(($GLOBALS['nyx_auth']['username'] ?? '') ?: '');
     }
 
     public static function bearerToken(?Request $r = null): string
@@ -80,12 +72,12 @@ final class AuthContext
         if (stripos($hdr, 'Bearer ') === 0) {
             return trim(substr($hdr, 7));
         }
-        // also accept X-Session / token query
-        if ($r !== null) {
-            $t = (string)($r->query('token') ?? $r->query('session') ?? '');
-            if ($t !== '') return $t;
-            $json = $r->json() ?? [];
-            if (!empty($json['token']) && is_string($json['token'])) return $json['token'];
+        // Optional dedicated headers only (never query/body)
+        if ($r !== null && method_exists($r, 'header')) {
+            $alt = (string)($r->header('X-Session-Token') ?? $r->header('X-Auth-Token') ?? '');
+            if ($alt !== '' && preg_match('/^[a-f0-9]{32,128}$/i', $alt)) {
+                return $alt;
+            }
         }
         return '';
     }

@@ -9,6 +9,8 @@ use Nyx\Core\Http\Response;
 use Nyx\Core\Http\JsonResponse;
 use Nyx\Core\Routing\Router;
 use Nyx\Core\Security\Authentication\SessionAuthenticator;
+use Nyx\Core\RateLimiting\RateLimiter;
+use Nyx\Shared\Infrastructure\Storage\FileStore;
 
 final class Application
 {
@@ -73,6 +75,62 @@ final class Application
     /**
      * Paths that never require a session (public surface).
      */
+
+    private function clientIp(Request $request): string
+    {
+        $xff = (string)($request->header('X-Forwarded-For') ?? '');
+        if ($xff !== '') {
+            $ip = trim(explode(',', $xff)[0]);
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
+        $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
+    }
+
+    private function enforceRateLimits(Request $request, string $method, string $path): ?Response
+    {
+        $dataRoot = defined('DATA_DIR') ? DATA_DIR : (defined('NYX_DATA_DIR') ? NYX_DATA_DIR : '');
+        if ($dataRoot === '') {
+            return null;
+        }
+        $limiter = new RateLimiter(new FileStore($dataRoot));
+        $ip = $this->clientIp($request);
+
+        // Auth surface — strict
+        if ($method === 'POST' && (
+            $path === '/api/v3/auth/register' || $path === '/api/v1/auth/register' ||
+            $path === '/api/v3/auth/login' || $path === '/api/v1/auth/login'
+        )) {
+            if (!$limiter->hit('auth:' . $ip, 20, 60)) {
+                return JsonResponse::error('rate limit exceeded', 429);
+            }
+        }
+
+        // Mesh announce / gossip — prevent amplification spam
+        if ($method === 'POST' && (
+            str_contains($path, '/chain/announce') ||
+            str_contains($path, '/chain/gossip') ||
+            str_contains($path, '/settlement/announce') ||
+            str_contains($path, '/settlement/gossip') ||
+            str_starts_with($path, '/api/v3/federation/')
+        )) {
+            if (!$limiter->hit('mesh:' . $ip, 60, 60)) {
+                return JsonResponse::error('rate limit exceeded', 429);
+            }
+        }
+
+        // Global API ceiling per IP
+        if (str_starts_with($path, '/api/')) {
+            if (!$limiter->hit('api:' . $ip, 240, 60)) {
+                return JsonResponse::error('rate limit exceeded', 429);
+            }
+        }
+
+        return null;
+    }
+
     private function isPublicRoute(string $method, string $path): bool
     {
         $path = '/' . trim($path, '/');
@@ -210,6 +268,12 @@ final class Application
         try {
             $method = $request->method();
             $path = $request->path();
+
+            // Core rate limits (shared-hosting friendly file buckets)
+            $rate = $this->enforceRateLimits($request, $method, $path);
+            if ($rate !== null) {
+                return $rate;
+            }
 
             if ($this->requiresAuth($method, $path)) {
                 $auth = (new SessionAuthenticator())->requireUser($request);

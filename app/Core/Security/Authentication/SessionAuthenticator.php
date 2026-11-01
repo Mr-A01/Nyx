@@ -26,19 +26,10 @@ final class SessionAuthenticator
             return $m[1];
         }
         // Fallback headers / query used by some clients
+        // Prefer Authorization Bearer. Optional dedicated headers only (never query/body — log/referrer leaks).
         $alt = (string)($request->header('X-Session-Token') ?? $request->header('X-Auth-Token') ?? '');
-        if ($alt !== '') {
+        if ($alt !== '' && preg_match('/^[a-f0-9]{32,128}$/i', $alt)) {
             return $alt;
-        }
-        $q = $request->query('token');
-        if (is_string($q) && $q !== '') {
-            return $q;
-        }
-        $body = $request->json() ?? [];
-        foreach (['token', 'session', 'session_token'] as $k) {
-            if (!empty($body[$k]) && is_string($body[$k])) {
-                return $body[$k];
-            }
         }
         return null;
     }

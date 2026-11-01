@@ -1,38 +1,44 @@
 RewriteEngine On
 RewriteBase /nyx/
-DirectoryIndex index.php
+DirectoryIndex index.php public/index.php
 
-# Deny sensitive / packaging / legacy trees
-RewriteRule ^(data|config|app|storage|legacy|bootstrap|routes|tools|docs|nyx-relay-package|vendor)(/|$) - [F,L]
+# --- Security: block sensitive trees ---
+RewriteRule ^(data|config|app|storage|legacy|bootstrap|routes|tools|docs|nyx-relay-package|vendor|tests|database|infra|bin|resources|docker)(/|$) - [F,L]
 RewriteRule \.(env|sqlite|pem|log|sql|bak|swp|zip|tar|gz)$ - [F,L]
 RewriteRule ^_[^/]+\.(php|js)$ - [F,L]
 RewriteRule ^(pack_release|update_channel)\.php$ - [F,L]
 
+# --- WebSocket ---
 RewriteRule ^ws/?$ public/ws.php [L,QSA]
 
-# Canonical UI under public/
-RewriteRule ^(client|home|identity|status|landing|messenger)\.html$ public/$1.html [L]
+# --- Static assets (always from public/assets) ---
+RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+
+# --- Canonical UI only under public/ ---
+RewriteRule ^(client|home|identity|status|landing|messenger|index)\.html$ public/$1.html [L]
 RewriteRule ^install/?$ public/install/index.php [L]
 RewriteRule ^install/(.*)$ public/install/$1 [L]
 RewriteRule ^sw\.js$ public/sw.js [L]
 RewriteRule ^update_listener\.js$ public/update_listener.js [L]
 RewriteRule ^robots\.txt$ public/robots.txt [L]
-RewriteRule ^assets/(.*)$ assets/$1 [L]
+
+# If request maps to an existing file/dir under document root, serve it
+# (except root *.html stubs — force public/)
+RewriteRule ^(client|home|identity|status|landing|messenger|index)\.html$ public/$1.html [L]
 
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
+# Everything else → public front controller
 RewriteRule ^ public/index.php [L]
 
-# Security headers for static UI (PHP also sets these on API)
 <IfModule mod_headers.c>
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "DENY"
   Header always set Referrer-Policy "no-referrer"
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
   Header always set Cross-Origin-Opener-Policy "same-origin"
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob:; font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self' https:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob: https://unpkg.com; font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self' https:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
   Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
 </IfModule>
-

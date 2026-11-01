@@ -1887,15 +1887,27 @@ async function initGlobe() {
       } else res(null);
     });
   });
+  // Prefer same-origin textures under assets/ (CSP-safe); remote only as last resort
+  const LOCAL = (function(){
+    try {
+      const base = location.pathname.replace(/\/[^/]*$/, '/');
+      return base + 'assets/images/globe/';
+    } catch (e) { return 'assets/images/globe/'; }
+  })();
   const REMOTE = 'https://unpkg.com/three-globe@2.31.0/example/img/';
   const loadTimed = (u, ms) => Promise.race([
     load(u),
     new Promise(res => setTimeout(() => res(null), ms))
   ]);
+  const loadTex = async (name) => {
+    let t = await loadTimed(LOCAL + name, 4000);
+    if (!t) t = await loadTimed(REMOTE + name, 6000);
+    return t;
+  };
   const [dayT, nightT, topoT] = await Promise.all([
-    loadTimed(REMOTE + 'earth-blue-marble.jpg', 6000),
-    loadTimed(REMOTE + 'earth-night.jpg', 6000),
-    loadTimed(REMOTE + 'earth-topology.png', 6000)
+    loadTex('earth-blue-marble.jpg'),
+    loadTex('earth-night.jpg'),
+    loadTex('earth-topology.png')
   ]);
   ld(64, 'Building scene');
 

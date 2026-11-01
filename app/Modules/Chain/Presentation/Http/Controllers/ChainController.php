@@ -10,6 +10,7 @@ use Nyx\Shared\Infrastructure\Http\AuthContext;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 use Nyx\Modules\Chain\Domain\LocalChain;
 use Nyx\Modules\Chain\Domain\NodeOperator;
+use Nyx\Core\Security\Authentication\PeerAuthenticator;
 
 final class ChainController
 {
@@ -113,6 +114,19 @@ final class ChainController
     public function gossip(Request $r): JsonResponse
     {
         $b = $r->json() ?? [];
+        $dataRoot = defined('DATA_DIR') ? DATA_DIR : (defined('NYX_DATA_DIR') ? NYX_DATA_DIR : '');
+        $require = filter_var(getenv('NYX_REQUIRE_PEER_SIG') ?: 'false', FILTER_VALIDATE_BOOLEAN);
+        $sig = (string)($r->header('X-Nyx-Peer-Sig') ?? ($b['peer_sig'] ?? ''));
+        $nonce = (string)($r->header('X-Nyx-Peer-Nonce') ?? ($b['peer_nonce'] ?? ''));
+        $rawBody = json_encode($b, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($require || $sig !== '') {
+            $peerAuth = new PeerAuthenticator($dataRoot);
+            if (!$peerAuth->verifyAndConsume((string)$rawBody, $sig !== '' ? $sig : null, $nonce !== '' ? $nonce : null)) {
+                if ($require || $sig !== '') {
+                    return ApiEnvelope::error('invalid peer signature', 403);
+                }
+            }
+        }
         $peer = strtolower(trim((string)($b['node'] ?? $b['host'] ?? '')));
         $height = (int)($b['height'] ?? 0);
         $tip = (string)($b['tip_hash'] ?? '');
@@ -192,12 +206,21 @@ final class ChainController
             }
             $url = $base . '/api/v3/chain/gossip';
             $ch = curl_init($url);
+            $headers = ['Content-Type: application/json', 'Accept: application/json'];
+            try {
+                $pa = new PeerAuthenticator($store->root());
+                $nonce = bin2hex(random_bytes(12));
+                $headers[] = 'X-Nyx-Peer-Nonce: ' . $nonce;
+                $headers[] = 'X-Nyx-Peer-Sig: ' . $pa->sign((string)$payload);
+            } catch (\Throwable $e) {
+                // optional
+            }
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 4,
                 CURLOPT_CONNECTTIMEOUT => 2,
                 CURLOPT_POST => true,
-                CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json'],
+                CURLOPT_HTTPHEADER => $headers,
                 CURLOPT_POSTFIELDS => $payload,
             ]);
             curl_exec($ch);

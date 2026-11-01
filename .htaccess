@@ -21,6 +21,8 @@ RewriteRule ^install/(.*)$ public/install/$1 [L]
 RewriteRule ^sw\.js$ public/sw.js [L]
 RewriteRule ^update_listener\.js$ public/update_listener.js [L]
 RewriteRule ^robots\.txt$ public/robots.txt [L]
+RewriteRule ^manifest\.webmanifest$ public/manifest.webmanifest [L]
+RewriteRule ^sw\.js$ public/sw.js [L]
 
 # If request maps to an existing file/dir under document root, serve it
 # (except root *.html stubs — force public/)

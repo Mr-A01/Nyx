@@ -8,7 +8,17 @@ document.addEventListener('DOMContentLoaded', function(){
     location.href=base+'identity.html?reauth=1';
   });
 });
-window.rocketLoader = false; try{Object.defineProperty(window,"rocketLoader",{value:false,writable:false});}catch(e){}</script><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><title>NYX Messenger — Stable API Workspace</title><meta name="description" content="NYX Messenger: stable, API-driven messaging workspace with reliable sending, voice messages and hardened real-time behavior."/><meta name="robots" content="noindex,nofollow"/><style>
+window.rocketLoader = false; try{Object.defineProperty(window,"rocketLoader",{value:false,writable:false});}catch(e){}</script><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<meta name="theme-color" content="#3B6FD4"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="NYX"/>
+<link rel="apple-touch-icon" href="assets/icons/icon-180.png"/>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/icon-32.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png"/>
+<title>NYX Messenger — Stable API Workspace</title><meta name="description" content="NYX Messenger: stable, API-driven messaging workspace with reliable sending, voice messages and hardened real-time behavior."/><meta name="robots" content="noindex,nofollow"/><style>
 
 :root{
   --bg:#08090E; --bg-soft:#0C0E15; --surface:#0F1119; --surface-2:#141724;
@@ -9626,10 +9636,11 @@ function shouldDesktopNotify(m, conv) {
 async function ensureWebPush() {
   try {
     if (!prefs.desktopNotifs) return;
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (!('serviceWorker' in navigator)) return;
     if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') return;
-    const reg = await navigator.serviceWorker.register('sw.js', { scope: './' });
+    const reg = await navigator.serviceWorker.register('sw.js?v=3', { scope: './' });
     await navigator.serviceWorker.ready;
+    if (!('PushManager' in window)) return;
     const vapidRes = await HttpDriver.req('GET', '/api/v3/push/vapid-public');
     const pk = (vapidRes && (vapidRes.publicKey || vapidRes.public_key)) || null;
     if (!pk) { console.warn('[NYX] VAPID not configured on relay'); return; }
@@ -12351,4 +12362,28 @@ try {
 })();
 </script>
 
-<script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="560acff737c9615388e1a978-|49" defer></script></html>
+<script src="/cdn-cgi/scripts/7d0fa10a/cloudflare-static/rocket-loader.min.js" data-cf-settings="560acff737c9615388e1a978-|49" defer></script>
+<script>
+(function(){
+  if (!('serviceWorker' in navigator)) return;
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js?v=3', { scope: './' }).catch(function(){});
+  });
+  window.__nyxDeferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    window.__nyxDeferredPrompt = e;
+    try { var b=document.getElementById('nyx-install-pwa'); if (b) b.hidden=false; } catch(err) {}
+  });
+  window.nyxInstallPwa = async function(){
+    var p = window.__nyxDeferredPrompt;
+    if (!p) return false;
+    p.prompt();
+    var r = await p.userChoice;
+    window.__nyxDeferredPrompt = null;
+    return !!(r && r.outcome === 'accepted');
+  };
+})();
+</script>
+
+</html>

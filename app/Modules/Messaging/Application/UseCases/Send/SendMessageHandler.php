@@ -23,7 +23,10 @@ final class SendMessageHandler
     public function handle(array $input): array
     {
         $conv = InputValidator::id($input['conversation_id'] ?? $input['conv'] ?? null, 160);
-        $sender = InputValidator::id($input['sender_id'] ?? $input['user_id'] ?? null, 128);
+        $sender = InputValidator::id($input['authenticated_sender'] ?? null, 128);
+        if ($sender === null) {
+            return ['ok' => false, 'error' => 'authenticated_sender_required'];
+        }
         $clientId = InputValidator::string($input['client_id'] ?? '', 128, 0) ?? '';
         $text = InputValidator::string($input['text'] ?? $input['body'] ?? '', 8000, 0);
         $ciphertext = InputValidator::string($input['ciphertext'] ?? '', 350000, 0);

@@ -125,16 +125,20 @@ final class MessageController {
         $guard = AccessGuard::make();
         $sp = $guard->space($convId);
         if (!$guard->canWrite($convId, $authUser)) {
-            // Heal spaces with missing owner/membership (older peers)
+            // Heal ONLY empty spaces (no membership files) — prevent owner hijack
             if (is_array($sp) && (string)($sp['owner_id'] ?? '') === '' && $authUser !== '') {
-                $sp['owner_id'] = $authUser;
-                try {
-                    $this->store()->put("spaces/{$convId}.json", $sp);
-                    $this->store()->put("memberships/{$convId}/{$authUser}.json", [
-                        'space_id' => $convId, 'user_id' => $authUser, 'role' => 'owner',
-                        'joined_ms' => ApiEnvelope::nowMs(),
-                    ]);
-                } catch (\Throwable $e) {}
+                $mroot = $this->store()->root() . '/memberships/' . $convId;
+                $existing = is_dir($mroot) ? (glob($mroot . '/*.json') ?: []) : [];
+                if (count($existing) === 0) {
+                    $sp['owner_id'] = $authUser;
+                    try {
+                        $this->store()->put("spaces/{$convId}.json", $sp);
+                        $this->store()->put("memberships/{$convId}/{$authUser}.json", [
+                            'space_id' => $convId, 'user_id' => $authUser, 'role' => 'owner',
+                            'joined_ms' => ApiEnvelope::nowMs(),
+                        ]);
+                    } catch (\Throwable $e) {}
+                }
             } elseif (is_array($sp) && $authUser !== '' && !$guard->isPublicSpace($sp)) {
                 // Member missing but user is authenticated creator attempt: soft join as member if no members yet
                 $memRoot = $this->store()->root() . '/memberships/' . $convId;
@@ -528,7 +532,7 @@ final class MessageController {
         // alias to space clear via messages path
         $body=$request->json()??[];
         $convId=(string)($body['conv_id']??$body['conversation_id']??'');
-        $uid=AuthContext::userId($request,$body); if($uid==='') $uid=strtolower(trim((string)($body['user_id']??'')));
+        $uid=AuthContext::userId($request,$body);
         if($convId===''||$uid==='') return ApiEnvelope::error('conv_id and user_id required',422);
         $now=ApiEnvelope::nowMs();
         $this->store()->put("clears/{$uid}/{$convId}.json",['conversation_id'=>$convId,'user_id'=>$uid,'cleared_ms'=>$now]);
@@ -539,7 +543,7 @@ final class MessageController {
         $id=(string)($body['id']??$body['message_id']??'');
         $convId=(string)($body['conv_id']??$body['conversation_id']??'');
         $emoji=(string)($body['emoji']??'');
-        $user=AuthContext::userId($request,$body); if($user==='') $user=(string)($body['user_id']??$body['sender_id']??'');
+        $user=AuthContext::userId($request,$body);
         $user=strtolower(trim($user));
         $username='';
         $s=$this->store();
@@ -611,7 +615,7 @@ final class MessageController {
         $s=$this->store(); $key="receipts/{$convId}/{$id}.json"; $rec=$s->get($key)??['items'=>[]]; $rec['items'][]=['user_id'=>(string)($body['user_id']??''),'type'=>(string)($body['type']??'delivered'),'ts'=>ApiEnvelope::nowMs()]; $s->put($key,$rec); return ApiEnvelope::ok($rec);
     }
     public function markRead(Request $request): JsonResponse {
-        $body=$request->json()??[]; $user=AuthContext::userId($request,$body); if($user==='') $user=(string)($body['user_id']??''); $convId=(string)($body['conv_id']??$body['conversation_id']??$body['space_id']??'');
+        $body=$request->json()??[]; $user=AuthContext::userId($request,$body); $convId=(string)($body['conv_id']??$body['conversation_id']??$body['space_id']??'');
         $rec=['user_id'=>$user,'conv_id'=>$convId,'read_ms'=>(int)($body['up_to_ms']??ApiEnvelope::nowMs())]; $this->store()->put('readstate/'.$user.'/'.$convId.'.json',$rec); return ApiEnvelope::ok($rec);
     }
     public function readState(Request $request): JsonResponse {
@@ -771,7 +775,7 @@ public function forward(Request $request): JsonResponse {
         $to = (string)($body["to_conversation_id"] ?? $body["to_conv_id"] ?? $body["to"] ?? $body["conversation_id"] ?? "");
         $from = (string)($body["from_conversation_id"] ?? $body["from"] ?? "");
         $mid = (string)($body["message_id"] ?? $body["id"] ?? "");
-        $user = AuthContext::userId($request, $body); if ($user === "") $user = (string)($body["user_id"] ?? $body["sender_id"] ?? "");
+        $user = AuthContext::userId($request, $body);
         $user = strtolower(trim($user));
         // Resolve username -> user_id so forwarded messages keep canonical sender
         try {

@@ -113,11 +113,8 @@ final class AccessGuard
                         return true;
                     }
                 }
-                // Bootstrap: broken spaces with empty owner still allow authed posts
-                if ((string)($sp['owner_id'] ?? '') === '') {
-                    return true;
-                }
-                return false;
+                // Empty owner: only existing members may post (no open invite for strangers)
+                return $this->isMember($convId, $userId);
             }
             return true;
         }

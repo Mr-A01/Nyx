@@ -77,4 +77,17 @@ final class SessionAuthenticator
         }
         return $session;
     }
+
+    /** Delete a session file (logout / revoke). Returns true if removed. */
+    public function revoke(string $token): bool
+    {
+        $token = trim($token);
+        if ($token === '' || !preg_match('/^[a-f0-9]{32,128}$/i', $token)) {
+            return false;
+        }
+        $key = "sessions/{$token}.json";
+        $exists = is_array($this->store->get($key));
+        $this->store->delete($key);
+        return $exists;
+    }
 }

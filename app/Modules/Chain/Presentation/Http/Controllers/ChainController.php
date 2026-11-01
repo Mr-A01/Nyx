@@ -9,6 +9,7 @@ use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
 use Nyx\Shared\Infrastructure\Http\AuthContext;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 use Nyx\Modules\Chain\Domain\LocalChain;
+use Nyx\Modules\Chain\Domain\NodeOperator;
 
 final class ChainController
 {
@@ -86,6 +87,26 @@ final class ChainController
             return ApiEnvelope::error('unauthorized', 401);
         }
         return ApiEnvelope::ok($this->chain()->reindex());
+    }
+
+
+    /** Public operator identity (Ed25519) for verifying block signatures. */
+    public function operator(Request $r): JsonResponse
+    {
+        $store = new FileStore(defined('DATA_DIR') ? DATA_DIR : '');
+        try {
+            $op = new NodeOperator($store);
+            $pk = $op->publicKeyHex();
+            return ApiEnvelope::ok([
+                'alg' => 'ed25519',
+                'public_key' => $pk,
+                'network' => LocalChain::NETWORK,
+                'node' => strtolower((string)($_SERVER['HTTP_HOST'] ?? '')),
+                'purpose' => 'work-chain block operator_sig verification',
+            ]);
+        } catch (\Throwable $e) {
+            return ApiEnvelope::error('operator key unavailable', 503);
+        }
     }
 
     /** Accept peer tip announcements (mesh observability, not full consensus). */

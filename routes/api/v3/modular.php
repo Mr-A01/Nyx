@@ -466,6 +466,7 @@ $router->get('/api/v3/chain/block', [$chain, 'block']);
 $router->get('/api/v3/chain/verify', [$chain, 'verify']);
 $router->get('/api/v3/chain/range', [$chain, 'range']);
 $router->get('/api/v3/chain/stats', [$chain, 'stats']);
+$router->get('/api/v3/chain/operator', [$chain, 'operator']);
 $router->post('/api/v3/chain/reindex', [$chain, 'reindex']);
 
 $router->post('/api/v3/chain/gossip', [$chain, 'gossip']);

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Nyx\Core\Maintenance;
 
+use Nyx\Shared\Infrastructure\Fs\SafeFs;
+
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 
 /**
@@ -58,7 +60,7 @@ final class DataGc
                 $raw = @file_get_contents($f);
                 $data = $raw !== false ? json_decode($raw, true) : null;
                 if (!is_array($data)) {
-                    @unlink($f);
+                    SafeFs::unlinkUnder($this->store->root(), $f);
                     $removed++;
                     continue;
                 }
@@ -69,7 +71,7 @@ final class DataGc
                         static fn ($t) => is_int($t) && $t > $now - max(60, $window)
                     ));
                     if ($hits === []) {
-                        @unlink($f);
+                        SafeFs::unlinkUnder($this->store->root(), $f);
                         $removed++;
                     }
                     continue;
@@ -78,7 +80,7 @@ final class DataGc
                 $reset = (int)($data['reset'] ?? 0);
                 $window = (int)($data['window'] ?? 0);
                 if (($reset > 0 && $reset < $now) || ($window > 0 && $window < $now && $until <= $now)) {
-                    @unlink($f);
+                    SafeFs::unlinkUnder($this->store->root(), $f);
                     $removed++;
                 }
             }
@@ -102,13 +104,13 @@ final class DataGc
             $raw = @file_get_contents($f);
             $data = $raw !== false ? json_decode($raw, true) : null;
             if (!is_array($data)) {
-                @unlink($f);
+                SafeFs::unlinkUnder($this->store->root(), $f);
                 $removed++;
                 continue;
             }
             $exp = (int)($data['expires_ms'] ?? 0);
             if ($exp > 0 && $exp < $nowMs) {
-                @unlink($f);
+                SafeFs::unlinkUnder($this->store->root(), $f);
                 $removed++;
             }
         }
@@ -131,13 +133,13 @@ final class DataGc
             $raw = @file_get_contents($f);
             $data = $raw !== false ? json_decode($raw, true) : null;
             if (!is_array($data)) {
-                @unlink($f);
+                SafeFs::unlinkUnder($this->store->root(), $f);
                 $removed++;
                 continue;
             }
             $ts = (int)($data[$tsKey] ?? $data['expires_ms'] ?? $data['created_ms'] ?? 0);
             if ($ts <= 0 || ($nowMs - $ts) > $ttlMs) {
-                @unlink($f);
+                SafeFs::unlinkUnder($this->store->root(), $f);
                 $removed++;
             }
         }

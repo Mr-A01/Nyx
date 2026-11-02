@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Nyx\Shared\Infrastructure\Storage;
 
+use Nyx\Shared\Infrastructure\Fs\SafeFs;
+
 /**
  * JSON file store rooted at data/. Path traversal is rejected.
  */
@@ -60,11 +62,7 @@ final class FileStore
         if ($full === null || !is_file($full)) {
             return $full === null ? false : true;
         }
-        // $full is realpath-jailed under $this->root by resolve()
-        if (!str_starts_with($full, $this->root)) {
-            return false;
-        }
-        return @unlink($full);
+        return SafeFs::unlinkUnder($this->root, $full);
     }
 
     public function listJson(string $dirPath): array

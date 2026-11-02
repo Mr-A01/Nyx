@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 namespace Nyx\Modules\Moderation\Presentation\Http\Controllers;
+
+use Nyx\Shared\Infrastructure\Fs\SafeFs;
 use Nyx\Core\Http\Request; use Nyx\Core\Http\JsonResponse;
 use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
 use Nyx\Shared\Infrastructure\IdGenerator\UlidLikeId;
@@ -40,7 +42,7 @@ final class ModerationController {
         $tid = strtolower(trim((string)($b['target_id'] ?? $b['blocked_id'] ?? '')));
         if ($uid === '' || $tid === '') return ApiEnvelope::error('user_id and target_id required', 422);
         $path = $this->store()->root() . "/blocks/{$uid}/{$tid}.json";
-        if (is_file($path)) @unlink($path);
+        SafeFs::unlinkUnder($this->store()->root(), $path);
         return ApiEnvelope::ok(['unblocked' => true, 'user_id' => $uid, 'target_id' => $tid]);
     }
 

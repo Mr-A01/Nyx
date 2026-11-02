@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Nyx\Core\Security\Authentication;
 
+use Nyx\Shared\Infrastructure\Fs\SafeFs;
+
 /**
  * HMAC peer auth for federation gossip + optional nonce replay protection.
  */
@@ -84,7 +86,7 @@ final class PeerAuthenticator
         foreach (glob($dir . '/*.json') ?: [] as $f) {
             $rec = json_decode((string) @file_get_contents($f), true);
             if (!is_array($rec) || $now > (int)($rec['expires_ms'] ?? 0)) {
-                @unlink($f);
+                SafeFs::unlinkUnder(defined('DATA_DIR')?DATA_DIR:'', $f);
             }
         }
     }

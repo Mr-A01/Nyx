@@ -4,28 +4,5 @@ parameters:
     - app
   reportUnmatchedIgnoredErrors: false
   ignoreErrors:
+    # PHP arrays are untyped throughout the modular JSON store layer
     - identifier: missingType.iterableValue
-    - identifier: missingType.parameter
-    - identifier: missingType.return
-    - identifier: booleanAnd.alwaysTrue
-    - identifier: booleanNot.alwaysTrue
-    - identifier: identical.alwaysFalse
-    - identifier: notIdentical.alwaysTrue
-    - identifier: function.alreadyNarrowedType
-    - identifier: method.nonObject
-    - identifier: deadCode.unreachable
-    - identifier: isset.offset
-    - identifier: nullCoalesce.offset
-    - identifier: nullCoalesce.variable
-    - identifier: argument.type
-    - identifier: return.type
-    - identifier: assign.propertyType
-    - identifier: property.nonObject
-    - identifier: binaryOp.invalid
-    - identifier: cast.string
-    - identifier: function.impossibleType
-    - identifier: method.notFound
-    - identifier: class.notFound
-    - identifier: staticMethod.notFound
-    - '#Call to an undefined method ReflectionType::#'
-    - '#Call to an undefined method#'

@@ -33,3 +33,8 @@
 - Mining optional work_sig (HMAC with session token); NYX_REQUIRE_WORK_SIG
 - Settlement mark: only batch creator; finalize needs confirm_finalize
 - Dockerfile + GHCR workflow (#50)
+
+## Batch 4
+- PushController fully session-bound (subscribe/unsubscribe/list/prefs/markRead)
+- Attachment download requires owner (or public flag)
+- GitHub Pages site under docs/site + scoped workflow

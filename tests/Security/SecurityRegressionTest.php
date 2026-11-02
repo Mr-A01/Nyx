@@ -8,6 +8,7 @@ use Nyx\Core\Security\Authentication\SessionAuthenticator;
 use Nyx\Core\Security\Authentication\PeerAuthenticator;
 use Nyx\Core\Support\Env;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
+use Nyx\Shared\Infrastructure\Fs\SafeFs;
 
 echo "=== Running Comprehensive Security Regression Tests ===\n";
 
@@ -122,13 +123,12 @@ echo "[PASS] Peer replay protection.\n";
 
 $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($tmp, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
 foreach ($it as $f) {
-    $p = $f->getPathname();
-    $tmpReal = realpath($tmp);
-    $pReal = realpath($p) ?: $p;
-    if ($tmpReal && is_string($pReal) && str_starts_with((string)$pReal, $tmpReal)) {
-        $f->isDir() ? @rmdir($p) : @unlink($p);
+    $pathName = $f->getPathname();
+    if ($f->isDir()) {
+        @rmdir($pathName);
+    } else {
+        SafeFs::unlinkUnder($tmp, $pathName);
     }
 }
-$tmpReal = realpath($tmp);
-if ($tmpReal) { @rmdir($tmpReal); }
+@rmdir($tmp);
 echo "=== All Security Regression Tests Passed Successfully ===\n";

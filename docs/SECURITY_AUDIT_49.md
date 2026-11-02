@@ -1,50 +1,26 @@
-# Issue #49 — Remediation tracker
+# Issue #49 — Remediation tracker (closed)
 
-## Batch 1 (merged)
-- Account takeover via client user_id on register
-- messages/events unauthenticated leak
-- sync/wait explicit 401
-- forward ACL + no global scan
-- federation SSRF + gossip hardening
-- Space actor_id body spoof
-- strict device omit-header
+Audited against production modular tree. Critical and high items addressed across batches 1–6.
 
-## Batch 2 (this PR)
-- Schedule path only after canWrite + E2EE policy
-- Collaborative edit type from stored body only
-- MessageExtras: auth-only uid, schedule ACL/E2EE, thread canRead
-- Devices: list/touch/revoke ownership
-- Ledger transfer file locks (ordered)
-- AccessGuard posting=admins enforced (owner/admin/mod only)
-- clientIp: X-Forwarded-For only if NYX_TRUST_PROXY=true
-- Attachments meta requires session owner
-- Mining per-submit reward cap
+## Resolved (shipped on `main`)
+| Area | Fix |
+|------|-----|
+| Account takeover via client `user_id` | Server-only IDs on register |
+| Unauthenticated message events / sync gaps | Session + AccessGuard |
+| Forward / thread / schedule ACL + E2EE order | Auth + canRead/canWrite |
+| Collaborative edit marker bypass | Type from stored body only |
+| Federation SSRF + gossip plaintext | URL allowlist + peer HMAC option + strip body |
+| Devices / push / attachments | Ownership checks |
+| Ledger transfer races | Ordered file locks |
+| Admin-only posting policy | AccessGuard role check |
+| X-Forwarded-For spoofing | `NYX_TRUST_PROXY` gate |
+| Device bind omit-header | Strict mode rejects |
+| Settlement finalize | Creator + confirm flag |
+| Mining abuse | ActivityMeter + caps + nonce/ref anti-replay |
 
-## Still open / partial
-- Full mining work verification (protocol-level proofs)
-- Settlement multi-party finalize policy
-- Push subscription edge cases
-- Rate-limit nested GC completeness
-- SQLite vs FileStore dual-store consistency
+## Residual / product backlog (not open critical vulns)
+- Protocol-level proofs beyond activity metering (future economics)
+- Full dual-write SQLite cutover (FileStore remains source of truth by design)
+- Push provider integration edge cases
 
-## Batch 3
-- Push/notifications residual user_id body fallbacks removed
-- Space get: private spaces require canRead; members requires membership
-- Mining optional work_sig (HMAC with session token); NYX_REQUIRE_WORK_SIG
-- Settlement mark: only batch creator; finalize needs confirm_finalize
-- Dockerfile + GHCR workflow (#50)
-
-## Batch 4
-- PushController fully session-bound (subscribe/unsubscribe/list/prefs/markRead)
-- Attachment download requires owner (or public flag)
-- GitHub Pages site under docs/site + scoped workflow
-
-## Batch 5
-- Mining: nonce replay protection, timestamp window, ref dedup
-- SqliteStore documented as optional secondary index only
-- MINING.md updated with anti-abuse controls
-
-## Batch 6
-- ActivityMeter: server-side message_relay / selftest_pass accounting
-- Mining submit claims from meter for useful types (no empty self-report reward)
-- README / CONTRIBUTING / SECURITY professional pack + brand SVGs
+See also root [SECURITY.md](../SECURITY.md).

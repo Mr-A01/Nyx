@@ -1,0 +1,5 @@
+# Treat generated / bulky UI as documentation where helpful
+public/**/*.min.js linguist-vendored
+vendor/** linguist-vendored
+*.svg linguist-detectable
+docs/** linguist-documentation

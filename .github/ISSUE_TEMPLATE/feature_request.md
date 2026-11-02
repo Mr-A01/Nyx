@@ -1,13 +1,21 @@
 ---
 name: Feature request
-about: Propose a professional product capability
+about: Suggest an improvement for NYX
 title: "[feat] "
-labels: enhancement
-assignees: Mr-A01
+labels: ["enhancement"]
 ---
 
 ## Problem
+What user or operator pain does this solve?
+
 ## Proposal
-## Acceptance criteria
-- [ ]
-## Security / privacy impact
+How should it work?
+
+## Alternatives
+What else did you consider?
+
+## Scope
+- [ ] API only
+- [ ] Client / PWA
+- [ ] Docs / ops
+- [ ] Mining / ledger / chain

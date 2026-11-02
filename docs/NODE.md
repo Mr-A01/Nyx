@@ -99,3 +99,7 @@ Restore = stop writers → replace `data/` + `env` → health check.
 
 - `NYX_VERSION` in `.env` / `ops/info`
 - UI cache-bust with `?v=` query on static HTML when deploying client updates
+
+## Maintenance GC
+`POST /api/v3/ops/gc` (Bearer session) removes expired rate buckets, sessions, mining nonces/refs (24h), federation nonces (10m). Also runs opportunistically on traffic.
+

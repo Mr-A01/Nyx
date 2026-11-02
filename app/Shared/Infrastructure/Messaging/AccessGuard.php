@@ -102,19 +102,16 @@ final class AccessGuard
         }
         if ($this->isPublicSpace($sp)) {
             $posting = strtolower((string)($sp['posting'] ?? 'members'));
-            if ($posting === 'admins') {
-                if ($this->isMember($convId, $userId)) {
-                    $m = $this->store->get("memberships/{$convId}/{$userId}.json");
-                    if (!is_array($m)) {
-                        $m = $this->store->get("memberships/{$convId}/" . strtolower($userId) . ".json");
-                    }
-                    $role = is_array($m) ? strtolower((string)($m['role'] ?? 'member')) : 'member';
-                    if (in_array($role, ['owner', 'admin', 'member'], true)) {
-                        return true;
-                    }
+            if ($posting === 'admins' || $posting === 'admin') {
+                if (!$this->isMember($convId, $userId)) {
+                    return false;
                 }
-                // Empty owner: only existing members may post (no open invite for strangers)
-                return $this->isMember($convId, $userId);
+                $m = $this->store->get("memberships/{$convId}/{$userId}.json");
+                if (!is_array($m)) {
+                    $m = $this->store->get("memberships/{$convId}/" . strtolower($userId) . ".json");
+                }
+                $role = is_array($m) ? strtolower((string)($m['role'] ?? 'member')) : 'member';
+                return in_array($role, ['owner', 'admin', 'mod'], true);
             }
             return true;
         }

@@ -461,10 +461,9 @@ final class MessageController {
         }
         // Collaborative special messages: any space member may update votes / todo / rsvp payload
         $curBody = (string)($m['body'] ?? $m['plaintext'] ?? '');
+        // Collaborative type ONLY from stored message — never from submitted text
         $isCollab = str_starts_with($curBody, '§POLL§') || str_starts_with($curBody, '§QUIZ§')
-            || str_starts_with($curBody, '§TODO§') || str_starts_with($curBody, '§EVENT§')
-            || str_starts_with($text, '§POLL§') || str_starts_with($text, '§QUIZ§')
-            || str_starts_with($text, '§TODO§') || str_starts_with($text, '§EVENT§');
+            || str_starts_with($curBody, '§TODO§') || str_starts_with($curBody, '§EVENT§');
         if (!$isAuthor && !$isCollab) {
             return ApiEnvelope::error('forbidden', 403);
         }

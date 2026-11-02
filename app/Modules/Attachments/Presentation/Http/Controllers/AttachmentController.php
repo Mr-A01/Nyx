@@ -42,6 +42,10 @@ final class AttachmentController {
 
     public function meta(Request $r): JsonResponse {
         $b = $r->json() ?? [];
+        $uid = AuthContext::userId($r, $b);
+        if ($uid === '') {
+            return ApiEnvelope::error('unauthorized', 401);
+        }
         $id = (string)($b['id'] ?? UlidLikeId::generate('att'));
         $rec = [
             'id' => $id,
@@ -49,7 +53,7 @@ final class AttachmentController {
             'mime' => (string)($b['mime'] ?? 'application/octet-stream'),
             'size' => (int)($b['size'] ?? 0),
             'hash' => (string)($b['hash'] ?? ''),
-            'user_id' => (AuthContext::userId($r, $b) ?: (string)($b['user_id'] ?? '')),
+            'user_id' => $uid,
             'encrypted' => !empty($b['encrypted']),
             'created_ms' => ApiEnvelope::nowMs(),
             'url' => $this->urlFor($id),

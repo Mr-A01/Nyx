@@ -18,6 +18,7 @@ use Nyx\Modules\Chain\Domain\LocalChain;
  */
 final class MiningController
 {
+    private const MAX_REWARD_PER_SUBMIT = 50;
     private const MAX_CLAIM_PER_DAY = 5000;
     private const RATES = [
         'relay_probe' => 2,
@@ -145,6 +146,9 @@ final class MiningController
         }
         if ($accepted === [] || $reward < 1) {
             return ApiEnvelope::error('no valid work', 422);
+        }
+        if ($reward > self::MAX_REWARD_PER_SUBMIT) {
+            $reward = self::MAX_REWARD_PER_SUBMIT;
         }
 
         // Daily cap

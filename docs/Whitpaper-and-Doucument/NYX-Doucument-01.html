@@ -576,13 +576,22 @@
 </head>
 <body>
 
-<div id="nyx-site-bar" style="position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 16px;background:#030305;border-bottom:1px solid #1e1e2a;font-family:Inter,system-ui,sans-serif;font-size:13px;color:#a1a1aa">
-  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-    <a href="./" style="color:#a78bfa;text-decoration:none;font-weight:600">NYX Site</a>
-    <span style="opacity:.4">/</span>
-    <span style="color:#e4e4e7">Professional Documentation</span>
-  </div>
-  <div style="display:flex;gap:14px">
+<section id="nyx-status-2026" style="max-width:920px;margin:24px auto 8px;padding:20px 22px;border:1px solid rgba(99,102,241,.35);border-radius:14px;background:linear-gradient(180deg,rgba(99,102,241,.08),rgba(0,0,0,.12));font-family:Inter,system-ui,sans-serif;color:#e4e4e7">
+  <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#818cf8;font-weight:700;margin-bottom:8px">Live documentation map · 2026</div>
+  <h2 style="font-size:1.2rem;margin:0 0 10px;color:#fff">How this doc relates to the repository</h2>
+  <p style="margin:0 0 12px;color:#a1a1aa;line-height:1.55;font-size:14px">Operator and developer references in-repo:</p>
+  <ul style="margin:0;padding-left:1.2rem;color:#d4d4d8;font-size:14px;line-height:1.65">
+    <li><code style="color:#c4b5fd">docs/INSTALL.md</code> — shared hosting / public document root</li>
+    <li><code style="color:#c4b5fd">docs/NODE.md</code> — ops, <code style="color:#c4b5fd">POST /api/v3/ops/gc</code>, mesh health</li>
+    <li><code style="color:#c4b5fd">docs/MINING.md</code> — activity meter, rates, anti-replay</li>
+    <li><code style="color:#c4b5fd">docs/CHAIN.md</code> · <code style="color:#c4b5fd">SETTLEMENT.md</code> — work-chain &amp; batches</li>
+    <li><code style="color:#c4b5fd">SECURITY.md</code> · <code style="color:#c4b5fd">docs/SECURITY_AUDIT_49.md</code> — hardening tracker</li>
+    <li>API surface: <code style="color:#c4b5fd">/api/v3/*</code> (auth, spaces, messages, federation, mining, ledger, chain)</li>
+  </ul>
+  <p style="margin:12px 0 0;font-size:13px;color:#71717a">Whitepaper: <a href="whitepaper.html" style="color:#a78bfa">whitepaper.html</a> · Home: <a href="./" style="color:#a78bfa">site root</a></p>
+</section>
+
+<div style="display:flex;gap:14px">
     <a href="./" style="color:#a1a1aa;text-decoration:none">Home</a>
     <a href="./whitepaper.html" style="color:#a1a1aa;text-decoration:none">Whitepaper</a>
     <a href="https://github.com/Mr-A01/Nyx" style="color:#a1a1aa;text-decoration:none">GitHub</a>

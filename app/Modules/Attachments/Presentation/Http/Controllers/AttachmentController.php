@@ -104,7 +104,7 @@ final class AttachmentController {
         $meta = $this->saveBlob($id, $raw, [
             'name' => $name,
             'mime' => $mime,
-            'user_id' => (AuthContext::userId($r, $b) ?: (string)($b['user_id'] ?? '')),
+            'user_id' => AuthContext::userId($r, $b),
             'encrypted' => !empty($b['encrypted']),
             'is_voice' => !empty($b['is_voice']) || !empty($b['isVoice']),
         ]);
@@ -163,8 +163,23 @@ final class AttachmentController {
             echo json_encode(['ok' => false, 'error' => ['message' => 'id required']]);
             exit;
         }
+        $uid = AuthContext::userId($r);
         $safe = preg_replace('/[^a-zA-Z0-9_\-]/', '', $id);
         $meta = $this->store()->get("attachments/{$id}.json") ?: $this->store()->get("attachments/{$safe}.json");
+        if (!is_array($meta)) {
+            http_response_code(404);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => ['message' => 'not found']]);
+            exit;
+        }
+        $owner = strtolower((string)($meta['user_id'] ?? ''));
+        $public = !empty($meta['public']);
+        if (!$public && ($uid === '' || ($owner !== '' && $owner !== strtolower($uid)))) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'error' => ['message' => 'forbidden']]);
+            exit;
+        }
         $blob = $this->blobDir() . '/' . $safe . '.bin';
         if (!is_file($blob)) {
             http_response_code(404);

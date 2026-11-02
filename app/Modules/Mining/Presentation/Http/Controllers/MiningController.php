@@ -150,6 +150,39 @@ final class MiningController
         if ($reward > self::MAX_REWARD_PER_SUBMIT) {
             $reward = self::MAX_REWARD_PER_SUBMIT;
         }
+
+        // Freshness + anti-replay for work batches
+        $clientTs = (int)($b['ts_ms'] ?? $b['timestamp_ms'] ?? 0);
+        $nowMs = ApiEnvelope::nowMs();
+        if ($clientTs > 0 && abs($nowMs - $clientTs) > 300_000) {
+            return ApiEnvelope::error('work timestamp expired', 422);
+        }
+        $nonce = preg_replace('/[^a-zA-Z0-9_\-]/', '', (string)($b['nonce'] ?? '')) ?? '';
+        if ($nonce !== '') {
+            if (strlen($nonce) < 8 || strlen($nonce) > 64) {
+                return ApiEnvelope::error('invalid nonce', 422);
+            }
+            $nkey = 'mining/nonces/' . hash('sha256', $uid . '|' . $nonce) . '.json';
+            if ($this->store()->get($nkey)) {
+                return ApiEnvelope::error('work nonce replay', 409);
+            }
+            $this->store()->put($nkey, ['user_id' => $uid, 'nonce' => $nonce, 'used_ms' => $nowMs]);
+        } elseif (filter_var(getenv('NYX_REQUIRE_WORK_NONCE') ?: 'false', FILTER_VALIDATE_BOOLEAN)) {
+            return ApiEnvelope::error('nonce required', 422);
+        }
+        // Dedup identical ref within 24h for same type
+        foreach ($accepted as $aw) {
+            $ref = (string)($aw['ref'] ?? '');
+            if ($ref === '') {
+                continue;
+            }
+            $rkey = 'mining/refs/' . hash('sha256', $uid . '|' . $aw['type'] . '|' . $ref) . '.json';
+            if ($this->store()->get($rkey)) {
+                return ApiEnvelope::error('work ref already claimed', 409);
+            }
+            $this->store()->put($rkey, ['user_id' => $uid, 'type' => $aw['type'], 'ref' => $ref, 'claimed_ms' => $nowMs]);
+        }
+
         // Session-bound attestation: client must sign canonical work with session token HMAC
         $sig = (string)($b['work_sig'] ?? $r->header('X-Nyx-Work-Sig') ?? '');
         $token = AuthContext::bearerToken($r);

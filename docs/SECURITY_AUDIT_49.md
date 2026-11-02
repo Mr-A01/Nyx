@@ -38,3 +38,8 @@
 - PushController fully session-bound (subscribe/unsubscribe/list/prefs/markRead)
 - Attachment download requires owner (or public flag)
 - GitHub Pages site under docs/site + scoped workflow
+
+## Batch 5
+- Mining: nonce replay protection, timestamp window, ref dedup
+- SqliteStore documented as optional secondary index only
+- MINING.md updated with anti-abuse controls

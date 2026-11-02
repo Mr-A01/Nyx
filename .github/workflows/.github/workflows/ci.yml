@@ -1,0 +1,81 @@
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+
+  pull_request:
+    branches: [main]
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: PHP ${{ matrix.php }} Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, mbstring, pdo_sqlite, sqlite3, sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: PHP Syntax Check
+        run: |
+          find app bootstrap config public routes tests \
+            -type f -name '*.php' -print0 \
+            | xargs -0 -n1 php -l
+
+      - name: Run PHPUnit Security Tests
+        run: vendor/bin/phpunit --no-coverage tests/Unit/SecurityTest.php
+
+      - name: Run Security Regression Tests
+        run: |
+          php tests/Security/FileStorePathTest.php
+          php tests/Security/SecurityRegressionTest.php
+          php tests/Unit/SecurityVerificationTest.php
+          php tests/Unit/NyxSelfTest.php
+
+  static-analysis:
+    name: PHPStan Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring, pdo_sqlite, sqlite3, sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run PHPStan
+        run: composer stan

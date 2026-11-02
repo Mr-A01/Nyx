@@ -1,0 +1,55 @@
+
+name: Semgrep Code Scanning
+
+on:
+  push:
+    branches: [main]
+
+  pull_request:
+    branches: [main]
+
+  schedule:
+    - cron: '13 6 * * 1'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: semgrep-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: PHP Security Scan
+    runs-on: ubuntu-latest
+
+    container:
+      image: semgrep/semgrep:1.182.0
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run Semgrep
+        run: |
+          semgrep scan \
+            --config auto \
+            --sarif \
+            --output=semgrep.sarif \
+            --exclude vendor \
+            --exclude storage \
+            --exclude data \
+            --exclude node_modules \
+            .
+
+      - name: Upload SARIF to GitHub
+        if: always() && hashFiles('semgrep.sarif') != '' && github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep-php

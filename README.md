@@ -27,6 +27,18 @@
 
 ---
 
+## Project website
+
+Live (GitHub Pages): **https://mr-a01.github.io/Nyx/**
+
+| Page | Path |
+|------|------|
+| Product site | `/` ← `docs/Whitpaper-and-Doucument/Nyx-V-04.html` |
+| Whitepaper | `/whitepaper.html` |
+| Documentation | `/documentation.html` |
+
+Source of truth for the three pages: [`docs/Whitpaper-and-Doucument/`](docs/Whitpaper-and-Doucument/).
+
 ## Why NYX?
 
 Most messengers lock you into a single cloud. **NYX** is a **relay mesh**: each node is a small PHP app that can live on ordinary shared hosting. Clients speak a stable **API v3**, encrypt on-device, and treat servers as transport + optional durable store — not as the source of truth for private content.

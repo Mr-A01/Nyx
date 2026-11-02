@@ -1,0 +1,8 @@
+docs/
+docs/site/
+docs/Whitpaper-and-Doucument/
+vendor/
+storage/
+data/
+node_modules/
+*.md

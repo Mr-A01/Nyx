@@ -57,10 +57,14 @@ final class FileStore
     public function delete(string $path): bool
     {
         $full = $this->resolve($path);
-        if ($full === null) {
+        if ($full === null || !is_file($full)) {
+            return $full === null ? false : true;
+        }
+        // $full is realpath-jailed under $this->root by resolve()
+        if (!str_starts_with($full, $this->root)) {
             return false;
         }
-        return is_file($full) ? @unlink($full) : true;
+        return @unlink($full);
     }
 
     public function listJson(string $dirPath): array

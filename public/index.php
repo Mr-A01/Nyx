@@ -26,14 +26,32 @@ $path = '/' . trim($path, '/'); if ($path !== '/') $path = rtrim($path, '/') ?: 
 $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
 $wantsHtml = $method === 'GET' && $path === '/' && !isset($_GET['json']) && (str_contains($accept, 'text/html') || !str_contains($accept, 'application/json'));
 if ($wantsHtml) {
-    foreach ([__DIR__.'/home.html', dirname(__DIR__).'/home.html'] as $home) {
-        if (is_file($home)) { header('Content-Type: text/html; charset=utf-8'); header('Cache-Control: no-store'); readfile($home); exit; }
+    $home = __DIR__ . '/home.html';
+    if (is_file($home)) {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: no-store');
+        readfile($home);
+        exit;
     }
 }
-$static = ['/client.html'=>'client.html','/status.html'=>'status.html','/identity.html'=>'identity.html','/home.html'=>'home.html'];
+/** @var array<string,string> $static allow-list only */
+$static = [
+    '/client.html' => 'client.html',
+    '/status.html' => 'status.html',
+    '/identity.html' => 'identity.html',
+    '/home.html' => 'home.html',
+];
 if ($method === 'GET' && isset($static[$path])) {
-    foreach ([__DIR__.'/'.$static[$path], dirname(__DIR__).'/'.$static[$path]] as $f) {
-        if (is_file($f)) { header('Content-Type: text/html; charset=utf-8'); readfile($f); exit; }
+    $name = basename($static[$path]); // neutralize any oddities
+    if (preg_match('/^[a-z0-9._-]+$/i', $name) === 1) {
+        $f = __DIR__ . DIRECTORY_SEPARATOR . $name;
+        $real = realpath($f);
+        $base = realpath(__DIR__);
+        if ($real !== false && $base !== false && str_starts_with($real, $base) && is_file($real)) {
+            header('Content-Type: text/html; charset=utf-8');
+            readfile($real);
+            exit;
+        }
     }
 }
 $app = Application::configure(NYX_BASE)->withRouting(api: NYX_BASE.'/routes/api/v3/modular.php', web: null)->withMiddleware()->withExceptions()->create();

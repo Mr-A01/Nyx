@@ -337,7 +337,7 @@ final class SpaceController {
         $sid = (string)($b['space_id'] ?? '');
         $uid = strtolower(trim((string)($b['user_id'] ?? $b['username'] ?? '')));
         $actor = AuthContext::userId($r, $b);
-        if ($actor === '') $actor = strtolower(trim((string)($b['actor_id'] ?? $b['session_user'] ?? '')));
+        if ($actor === '') return ApiEnvelope::error('unauthorized', 401);
         $role = strtolower((string)($b['role'] ?? 'member'));
         // resolve username to user_id
         $row = $this->store()->get("users/{$uid}.json");

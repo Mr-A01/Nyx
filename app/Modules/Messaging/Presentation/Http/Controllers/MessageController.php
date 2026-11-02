@@ -285,6 +285,9 @@ final class MessageController {
         if ($authUser === '') {
             try { $authUser = AuthContext::userId($request, $json); } catch (\Throwable $e) {}
         }
+        if ($authUser === '') {
+            return ApiEnvelope::error('unauthorized', 401);
+        }
         $guard = AccessGuard::make();
         if (!$guard->canRead($convId, $authUser)) {
             return ApiEnvelope::error('forbidden', 403);
@@ -361,6 +364,9 @@ final class MessageController {
         $authUser = (string)(($GLOBALS['nyx_auth']['user_id'] ?? '') ?: '');
         if ($authUser === '') {
             try { $authUser = AuthContext::userId($request, $json); } catch (\Throwable $e) {}
+        }
+        if ($authUser === '') {
+            return ApiEnvelope::error('unauthorized', 401);
         }
         if (!AccessGuard::make()->canRead($convId, $authUser)) {
             return ApiEnvelope::error('forbidden', 403);
@@ -647,20 +653,32 @@ final class MessageController {
         return ApiEnvelope::ok(['conversation_id' => $convId, 'conv_id' => $convId, 'cursors' => $cursors, 'count' => count($cursors)]);
     }
     public function events(Request $request): JsonResponse {
-        $user = (string)($request->query('user_id') ?? '');
-        $convId = (string)($request->query('conv_id') ?? $request->query('conversation_id') ?? '');
-        $since = (int)($request->query('since_ms') ?? 0);
+        $json = $request->json() ?? [];
+        $user = AuthContext::userId($request, $json);
+        if ($user === '') {
+            return ApiEnvelope::error('unauthorized', 401);
+        }
+        $convId = (string)($request->query('conv_id') ?? $request->query('conversation_id') ?? $json['conv_id'] ?? $json['conversation_id'] ?? '');
+        $since = (int)($request->query('since_ms') ?? $json['since_ms'] ?? 0);
         $s = $this->store();
         $events = [];
         $now = ApiEnvelope::nowMs();
+        $guard = AccessGuard::make();
         $convs = [];
         if ($convId !== '') {
+            if (!$guard->canRead($convId, $user)) {
+                return ApiEnvelope::error('forbidden', 403);
+            }
             $convs[] = $convId;
-        } elseif ($user !== '') {
+        } else {
+            // Only conversations the authenticated user belongs to
             $root = $s->root() . '/memberships';
             if (is_dir($root)) {
                 foreach (glob($root . '/*', GLOB_ONLYDIR) ?: [] as $dir) {
-                    if (is_file($dir . '/' . $user . '.json')) $convs[] = basename($dir);
+                    $cid = basename($dir);
+                    if ($guard->isMember($cid, $user) || $guard->canRead($cid, $user)) {
+                        $convs[] = $cid;
+                    }
                 }
             }
             $convs = array_slice($convs, 0, 40);
@@ -775,26 +793,14 @@ public function forward(Request $request): JsonResponse {
         $to = (string)($body["to_conversation_id"] ?? $body["to_conv_id"] ?? $body["to"] ?? $body["conversation_id"] ?? "");
         $from = (string)($body["from_conversation_id"] ?? $body["from"] ?? "");
         $mid = (string)($body["message_id"] ?? $body["id"] ?? "");
-        $user = AuthContext::userId($request, $body);
-        $user = strtolower(trim($user));
-        // Resolve username -> user_id so forwarded messages keep canonical sender
-        try {
-            $s0 = $this->store();
-            $row = $s0->get("users/{$user}.json");
-            if (!is_array($row)) $row = $s0->get("identity/usernames/{$user}.json");
-            if (is_array($row) && !empty($row["user_id"])) $user = strtolower((string)$row["user_id"]);
-        } catch (\Throwable $e) {}
-        if ($to === "" || $mid === "") return ApiEnvelope::error("to_conversation_id and message_id required", 422);
+        $user = strtolower(trim(AuthContext::userId($request, $body)));
+        if ($user === "") return ApiEnvelope::error("unauthorized", 401);
+        if ($to === "" || $mid === "" || $from === "") return ApiEnvelope::error("from_conversation_id, to_conversation_id and message_id required", 422);
+        $guard = AccessGuard::make();
+        if (!$guard->canRead($from, $user)) return ApiEnvelope::error("forbidden", 403);
+        if (!$guard->canWrite($to, $user)) return ApiEnvelope::error("forbidden", 403);
         $s = $this->store();
-        $src = null;
-        if ($from !== "") $src = $s->get("messages/{$from}/{$mid}.json");
-        if (!is_array($src)) {
-            $root = $s->root() . "/messages";
-            if (is_dir($root)) foreach (glob($root . "/*", GLOB_ONLYDIR) ?: [] as $dir) {
-                $cand = $s->get("messages/" . basename($dir) . "/" . $mid . ".json");
-                if (is_array($cand)) { $src = $cand; $from = basename($dir); break; }
-            }
-        }
+        $src = $s->get("messages/{$from}/{$mid}.json");
         if (!is_array($src)) return ApiEnvelope::error("source message not found", 404);
         $id = bin2hex(random_bytes(12));
         $now = ApiEnvelope::nowMs();

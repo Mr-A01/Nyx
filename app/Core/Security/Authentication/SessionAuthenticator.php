@@ -55,9 +55,16 @@ final class SessionAuthenticator
         $bound = strtolower(trim((string)($session['device_id'] ?? '')));
         $clientDevice = strtolower(trim((string)($request->header('X-Device-Id') ?? '')));
         $strict = filter_var(getenv('NYX_STRICT_DEVICE_BIND') ?: 'false', FILTER_VALIDATE_BOOLEAN);
-        if ($bound !== '' && $clientDevice !== '' && !hash_equals($bound, $clientDevice)) {
-            if ($strict) {
-                return null;
+        if ($bound !== '') {
+            if ($clientDevice === '') {
+                // Omitting device header when session is bound: strict mode rejects
+                if ($strict) {
+                    return null;
+                }
+            } elseif (!hash_equals($bound, $clientDevice)) {
+                if ($strict) {
+                    return null;
+                }
             }
         }
         if ($bound === '' && $clientDevice !== '' && preg_match('/^[a-zA-Z0-9._\\-:]{4,128}$/', $clientDevice)) {

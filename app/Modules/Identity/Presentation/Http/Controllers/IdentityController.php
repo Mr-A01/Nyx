@@ -79,7 +79,15 @@ final class IdentityController
             return ApiEnvelope::error('username taken', 409);
         }
 
-        $uid = (string)($b['user_id'] ?? UlidLikeId::generate());
+        // Always server-generated identity — never trust client user_id (account takeover)
+        $uid = UlidLikeId::generate();
+        // Collision resistance: regenerate if rare collision
+        for ($i = 0; $i < 5 && $this->store()->get("users/{$uid}.json"); $i++) {
+            $uid = UlidLikeId::generate();
+        }
+        if ($this->store()->get("users/{$uid}.json")) {
+            return ApiEnvelope::error('identity allocation failed', 500);
+        }
         $ph = password_hash($pw, PASSWORD_DEFAULT);
         if ($ph === false) {
             return ApiEnvelope::error('password hashing failed', 500);
@@ -93,6 +101,7 @@ final class IdentityController
             'password_hash' => $ph,
             'created_ms' => ApiEnvelope::nowMs(),
         ];
+        // Username reservation first; user record second (no overwrite of existing uid)
         $this->store()->put("identity/usernames/{$u}.json", $rec);
         $this->store()->put("users/{$uid}.json", $rec);
 

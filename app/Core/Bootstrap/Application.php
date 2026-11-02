@@ -229,6 +229,8 @@ final class Application
             '/api/v3/messages/sync',
             '/api/v3/messages/wait',
             '/api/v3/messages/list',
+            '/api/v3/messages/events',
+            '/api/v3/events',
             '/api/v3/sync',
             '/api/v1/auth/me',
             '/api/v3/auth/me',

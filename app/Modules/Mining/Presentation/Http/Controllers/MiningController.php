@@ -9,6 +9,7 @@ use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
 use Nyx\Shared\Infrastructure\Http\AuthContext;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 use Nyx\Modules\Chain\Domain\LocalChain;
+use Nyx\Modules\Mining\Domain\ActivityMeter;
 
 /**
  * Work-based token rewards for network contributors (relay operators / miners).
@@ -59,6 +60,7 @@ final class MiningController
         ];
         $miner = $uid !== '' ? ($this->store()->get($this->minerKey($uid)) ?: null) : null;
         $tip = $this->chain()->tip();
+        $activity = ActivityMeter::make()->snapshot();
         return ApiEnvelope::ok([
             'network' => 'nyx-work-chain',
             'node' => $node,
@@ -68,6 +70,8 @@ final class MiningController
             'chain_height' => (int)$tip['height'],
             'tip_hash' => (string)$tip['tip_hash'],
             'currency' => 'NYX',
+            'activity' => $activity,
+            'model' => 'activity-metered',
         ]);
     }
 
@@ -123,6 +127,8 @@ final class MiningController
 
         $reward = 0;
         $accepted = [];
+        $meter = ActivityMeter::make();
+        $meteredTypes = ['message_relay', 'storage_keep', 'relay_probe', 'peer_heartbeat', 'selftest_pass'];
         foreach (array_slice($works, 0, 20) as $w) {
             if (!is_array($w)) {
                 continue;
@@ -131,9 +137,19 @@ final class MiningController
             if (!isset(self::RATES[$type])) {
                 continue;
             }
-            $units = max(0, min(100, (int)($w['units'] ?? 1)));
-            if ($units < 1) {
+            $want = max(0, min(100, (int)($w['units'] ?? 1)));
+            if ($want < 1) {
                 continue;
+            }
+            // Prefer server-metered activity for useful work types
+            if (in_array($type, $meteredTypes, true)) {
+                $claim = $meter->claim($type, $want);
+                $units = (int)$claim['claimed'];
+                if ($units < 1) {
+                    continue; // no unclaimed real activity
+                }
+            } else {
+                $units = $want;
             }
             $gain = self::RATES[$type] * $units;
             $reward += $gain;
@@ -142,6 +158,7 @@ final class MiningController
                 'units' => $units,
                 'reward' => $gain,
                 'ref' => substr((string)($w['ref'] ?? ''), 0, 64),
+                'source' => in_array($type, $meteredTypes, true) ? 'meter' : 'declared',
             ];
         }
         if ($accepted === [] || $reward < 1) {

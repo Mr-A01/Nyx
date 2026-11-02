@@ -6,6 +6,7 @@ use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 use Nyx\Shared\Infrastructure\Http\AuthContext;
 use Nyx\Core\Maintenance\DataGc;
+use Nyx\Modules\Mining\Domain\ActivityMeter;
 final class OpsController {
     private static function geo(string $host): array {
         static $map = [
@@ -87,6 +88,7 @@ final class OpsController {
         ]);
     }
     public function selftest(Request $r): JsonResponse {
+        try { ActivityMeter::make()->record('selftest_pass', 1); } catch (\Throwable $e) {}
         $dataDir = defined('DATA_DIR') ? DATA_DIR : '';
         $basePath = defined('NYX_BASE') ? NYX_BASE : dirname(__DIR__, 6);
         $peers = 0;

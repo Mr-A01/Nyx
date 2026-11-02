@@ -7,6 +7,7 @@ use Nyx\Shared\Infrastructure\IdGenerator\UlidLikeId;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 use Nyx\Shared\Infrastructure\Events\EventBus;
 use Nyx\Shared\Infrastructure\Messaging\AccessGuard;
+use Nyx\Modules\Mining\Domain\ActivityMeter;
 use Nyx\Shared\Infrastructure\Messaging\MessageIntegrity;
 use Nyx\Shared\Infrastructure\Http\AuthContext;
 final class MessageController {
@@ -212,6 +213,7 @@ final class MessageController {
         // no fat payload blob — saves disk + bandwidth
         MessageIntegrity::make()->sealNew($convId, $record);
         $s->put("messages/{$convId}/{$id}.json", $record);
+        try { ActivityMeter::make()->record('message_relay', 1); } catch (\Throwable $e) {}
         $this->appendIndex($s, $convId, $id);
         try { $this->bus()->publish("conv:{$convId}", ['type' => 'message', 'message_id' => $id, 'conv_id' => $convId, 'created_ms' => $now]); } catch (\Throwable $e) {}
         try { $this->fanoutToPeers($record); } catch (\Throwable $e) {}

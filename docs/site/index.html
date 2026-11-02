@@ -3,67 +3,158 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>NYX Messenger</title>
-  <meta name="description" content="NYX — federated E2EE messenger relay mesh with work-chain rewards" />
+  <title>NYX — Federated E2EE Messenger</title>
+  <meta name="description" content="NYX is a federated end-to-end encrypted messenger relay mesh with activity-metered work-chain rewards." />
+  <meta name="theme-color" content="#0B0F17" />
+  <link rel="icon" href="assets/nyx-logo.svg" type="image/svg+xml" />
   <style>
-    :root { --bg:#0B0F17; --text:#E8EEF8; --muted:#8B9BB4; --accent:#3B6FD4; --card:#141B28; }
+    :root {
+      --bg: #070a10;
+      --bg2: #0d1320;
+      --text: #eef3fb;
+      --muted: #8b9bb4;
+      --accent: #3b6fd4;
+      --accent2: #6c5ce7;
+      --card: rgba(20, 27, 40, 0.85);
+      --line: rgba(255,255,255,0.07);
+      --ok: #2ecc71;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, Segoe UI, sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; }
-    .wrap { max-width: 820px; margin: 0 auto; padding: 48px 20px 80px; }
-    h1 { font-size: 2rem; letter-spacing: -0.02em; margin-bottom: 8px; }
-    .sub { color: var(--muted); margin-bottom: 28px; }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .card { background: var(--card); border-radius: 12px; padding: 18px 20px; margin: 14px 0; border: 1px solid rgba(255,255,255,.06); }
-    .card h2 { font-size: 1.05rem; margin-bottom: 8px; }
-    .card p, .card li { color: var(--muted); font-size: 0.95rem; }
-    ul { padding-left: 1.2rem; }
-    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-    .btn { display: inline-block; padding: 8px 14px; border-radius: 8px; background: var(--accent); color: #fff !important; font-weight: 600; font-size: 0.9rem; }
-    .btn.ghost { background: transparent; border: 1px solid rgba(255,255,255,.12); color: var(--text) !important; }
-    footer { margin-top: 40px; color: var(--muted); font-size: 0.85rem; }
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(59,111,212,.22), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(108,92,231,.18), transparent 50%),
+        linear-gradient(180deg, var(--bg), var(--bg2) 40%, #080c14);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 40px 20px 96px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 48px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; letter-spacing: -0.02em; }
+    .brand img { width: 40px; height: 40px; }
+    nav { display: flex; flex-wrap: wrap; gap: 8px; }
+    nav a {
+      color: var(--muted); text-decoration: none; font-size: 0.9rem;
+      padding: 8px 12px; border-radius: 999px; border: 1px solid transparent;
+    }
+    nav a:hover { color: var(--text); border-color: var(--line); background: rgba(255,255,255,0.03); }
+    .hero { margin-bottom: 40px; }
+    .hero h1 {
+      font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -0.03em; line-height: 1.15;
+      margin-bottom: 14px;
+    }
+    .hero h1 span {
+      background: linear-gradient(90deg, #8eb6ff, #b8a6ff);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .hero p { color: var(--muted); max-width: 52ch; font-size: 1.05rem; margin-bottom: 22px; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 16px; border-radius: 12px; font-weight: 600; font-size: 0.92rem;
+      text-decoration: none; border: 1px solid transparent;
+    }
+    .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+    .btn.ghost { color: var(--text); border-color: var(--line); background: rgba(255,255,255,0.03); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 28px 0; }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+      padding: 18px 18px 16px; backdrop-filter: blur(8px);
+    }
+    .card h3 { font-size: 1rem; margin-bottom: 8px; }
+    .card p, .card li { color: var(--muted); font-size: 0.92rem; }
+    .card ul { padding-left: 1.1rem; }
+    .banner {
+      width: 100%; border-radius: 16px; border: 1px solid var(--line);
+      margin: 8px 0 28px; display: block; background: #0b0f17;
+    }
+    .arch { width: 100%; border-radius: 16px; border: 1px solid var(--line); margin-top: 8px; }
+    .pill {
+      display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em;
+      text-transform: uppercase; color: #9ec0ff; background: rgba(59,111,212,.15);
+      border: 1px solid rgba(59,111,212,.25); padding: 4px 10px; border-radius: 999px; margin-bottom: 14px;
+    }
+    footer {
+      margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line);
+      color: var(--muted); font-size: 0.85rem; display: flex; flex-wrap: wrap; gap: 10px 18px;
+      justify-content: space-between;
+    }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; color: #c5d4f0; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>NYX Messenger</h1>
-    <p class="sub">Federated E2EE messenger · shared-hosting relays · work-chain mining · settlement mesh</p>
-    <div class="row">
-      <a class="btn" href="https://github.com/Mr-A01/Nyx">GitHub</a>
-      <a class="btn ghost" href="../Whitpaper-and-Doucument/NYX-Whitpaper-01.html">Whitepaper</a>
-      <a class="btn ghost" href="../INSTALL.md">Install</a>
-      <a class="btn ghost" href="../CHAIN.md">Work-chain</a>
+    <header>
+      <div class="brand">
+        <img src="assets/nyx-logo.svg" alt="NYX" />
+        <span>NYX</span>
+      </div>
+      <nav>
+        <a href="https://github.com/Mr-A01/Nyx">GitHub</a>
+        <a href="docs/INSTALL.md">Install</a>
+        <a href="docs/MINING.md">Mining</a>
+        <a href="docs/SECURITY_AUDIT_49.md">Security</a>
+        <a href="README-fa.md">فارسی</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="pill">Protocol v3 · Mesh · PWA</div>
+      <h1>Federated <span>E2EE</span> messenger for real relays</h1>
+      <p>
+        NYX runs as a modular PHP relay mesh — shared hosting or Docker — with client-side encryption,
+        activity-metered incentives, and an operator-friendly work-chain. Servers move ciphertext; they are not the vault of private meaning.
+      </p>
+      <div class="row">
+        <a class="btn primary" href="https://github.com/Mr-A01/Nyx">View repository</a>
+        <a class="btn ghost" href="docs/INSTALL.md">Install guide</a>
+        <a class="btn ghost" href="https://github.com/Mr-A01/Nyx/blob/main/Dockerfile">Docker</a>
+      </div>
+    </section>
+
+    <img class="banner" src="assets/nyx-banner.svg" alt="NYX banner" />
+
+    <div class="grid">
+      <div class="card">
+        <h3>Privacy by design</h3>
+        <p>End-to-end encryption on the client (libsodium). Relays prefer ciphertext; identity and devices stay under user control.</p>
+      </div>
+      <div class="card">
+        <h3>Federation mesh</h3>
+        <p>Multi-domain topology, gossip, peer authentication options, and live network health endpoints for operators.</p>
+      </div>
+      <div class="card">
+        <h3>Activity-metered mining</h3>
+        <p>Rewards track useful work — message relay, probes, storage — not idle hashing on shared hosts.</p>
+      </div>
+      <div class="card">
+        <h3>Ship anywhere</h3>
+        <p><code>public/</code> document root for shared hosting, or <code>ghcr.io/mr-a01/nyx</code> for containers.</p>
+      </div>
     </div>
 
     <div class="card">
-      <h2>What it is</h2>
-      <p>NYX is a modular messenger relay designed for multi-domain shared hosting. Clients speak a stable v3 API; nodes gossip mesh state, optional settlement batches, and operator-signed work-chain blocks.</p>
+      <h3>Architecture</h3>
+      <p>Hexagonal modules under <code>app/</code>, JSON FileStore as source of truth, optional SQLite index, PWA shell in <code>public/</code>.</p>
+      <img class="arch" src="assets/architecture.svg" alt="Architecture diagram" />
     </div>
 
-    <div class="card">
-      <h2>Docs</h2>
+    <div class="card" style="margin-top:14px">
+      <h3>Operator cheatsheet</h3>
       <ul>
-        <li><a href="../INSTALL.md">INSTALL.md</a> — deploy on shared hosting</li>
-        <li><a href="../NODE.md">NODE.md</a> — node operations</li>
-        <li><a href="../MINING.md">MINING.md</a> — miner rewards</li>
-        <li><a href="../SETTLEMENT.md">SETTLEMENT.md</a> — settlement bridge</li>
-        <li><a href="../SECURITY_AUDIT_49.md">Security audit tracker</a></li>
-        <li><a href="../ROADMAP.md">ROADMAP.md</a></li>
+        <li><code>GET /api/v3/ops/selftest</code> — health</li>
+        <li><code>GET /api/v3/ops/network</code> — mesh snapshot</li>
+        <li><code>POST /api/v3/ops/gc</code> — maintenance GC (Bearer)</li>
+        <li><code>GET /api/v3/mining/status</code> — rates + activity meter</li>
       </ul>
     </div>
 
-    <div class="card">
-      <h2>Docker</h2>
-      <p><code>docker pull ghcr.io/mr-a01/nyx:latest</code></p>
-      <p>See repository README for run flags and volume mounts.</p>
-    </div>
-
-    <div class="card">
-      <h2>فارسی</h2>
-      <p>خلاصه فارسی در <a href="../../README-fa.md">README-fa.md</a>.</p>
-    </div>
-
-    <footer>NYX · open development on GitHub · Issue → Branch → PR workflow</footer>
+    <footer>
+      <span>NYX · open development on GitHub</span>
+      <span>Issue → Branch → PR → Merge</span>
+    </footer>
   </div>
 </body>
 </html>

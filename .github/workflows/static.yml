@@ -5,6 +5,8 @@ on:
     branches: ["main"]
     paths:
       - 'docs/**'
+      - 'README.md'
+      - 'README-fa.md'
       - '.github/workflows/static.yml'
   workflow_dispatch:
 
@@ -27,18 +29,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Assemble site
         run: |
-          mkdir -p _site
+          mkdir -p _site/docs _site/assets
           cp -r docs/site/* _site/
-          mkdir -p _site/docs
+          cp docs/assets/*.svg _site/assets/ 2>/dev/null || true
+          cp docs/site/assets/* _site/assets/ 2>/dev/null || true
           cp docs/*.md _site/docs/ 2>/dev/null || true
           cp -r docs/Whitpaper-and-Doucument _site/docs/ 2>/dev/null || true
           cp README.md README-fa.md _site/ 2>/dev/null || true
-          # rewrite relative links in index for assembled layout
-          sed -i 's|href="../Whitpaper|href="docs/Whitpaper|g' _site/index.html
-          sed -i 's|href="../INSTALL|href="docs/INSTALL|g' _site/index.html
-          sed -i 's|href="../CHAIN|href="docs/CHAIN|g' _site/index.html
-          sed -i 's|href="../|href="docs/|g' _site/index.html
-          sed -i 's|href="../../README-fa|href="README-fa|g' _site/index.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

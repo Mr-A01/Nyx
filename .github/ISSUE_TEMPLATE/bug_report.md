@@ -1,24 +1,27 @@
 ---
 name: Bug report
-about: Report a defect found in NYX relay or client
+about: Something broken in the relay, API, or client
 title: "[bug] "
-labels: bug
-assignees: Mr-A01
+labels: ["bug"]
 ---
 
-## Summary
-<!-- One sentence -->
+## Describe the bug
+A clear description of what went wrong.
 
-## Environment
-- Node / domain:
-- Version (`/?json=1`):
-- Browser:
+## Node / environment
+- Domain / node:
+- NYX version (if known):
+- Browser or client:
 
 ## Steps to reproduce
 1.
 2.
+3.
 
-## Expected
-## Actual
-## Evidence
-<!-- screenshots, response bodies, headers -->
+## Expected vs actual
+-
+
+## Logs / response JSON
+```json
+
+```

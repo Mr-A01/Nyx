@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security concern
+    url: https://github.com/Mr-A01/Nyx/blob/main/SECURITY.md
+    about: Read the security policy before filing public exploit details.
+  - name: Documentation site
+    url: https://mr-a01.github.io/Nyx/
+    about: Project overview and links to install / mining docs.

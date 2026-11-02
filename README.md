@@ -130,6 +130,8 @@ Report sensitive issues privately when possible; public tracking via GitHub Issu
 | [`docs/site/`](docs/site/) | GitHub Pages landing |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Branch → PR workflow |
 | [`SECURITY.md`](SECURITY.md) | Vulnerability reporting |
+| [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | Community standards |
+| [`docs/README.md`](docs/README.md) | Docs index |
 
 ---
 

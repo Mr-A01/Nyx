@@ -769,18 +769,46 @@
 </head>
 <body>
 
-<section id="nyx-status-2026" style="max-width:920px;margin:24px auto 8px;padding:20px 22px;border:1px solid rgba(124,58,237,.35);border-radius:14px;background:linear-gradient(180deg,rgba(124,58,237,.08),rgba(0,0,0,.15));font-family:Inter,system-ui,sans-serif;color:#e4e4e7">
-  <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#a78bfa;font-weight:700;margin-bottom:8px">Project status · 2026</div>
-  <h2 style="font-size:1.25rem;margin:0 0 10px;color:#fff">Implementation aligned with the live NYX mesh</h2>
-  <p style="margin:0 0 12px;color:#a1a1aa;line-height:1.55;font-size:14px">This whitepaper describes the protocol vision. The production tree on GitHub (<code style="color:#c4b5fd">Mr-A01/Nyx</code>) currently ships:</p>
-  <ul style="margin:0;padding-left:1.2rem;color:#d4d4d8;font-size:14px;line-height:1.6">
-    <li><strong>Protocol v3</strong> modular PHP relays (hexagonal <code style="color:#c4b5fd">app/Modules</code>)</li>
-    <li><strong>E2EE-first messaging</strong> with AccessGuard, session auth, federation gossip + SSRF guards</li>
-    <li><strong>Activity-metered mining</strong> — rewards for real <code style="color:#c4b5fd">message_relay</code>, probes, storage, selftest (not PoW hashing on shared hosts)</li>
-    <li><strong>Local work-chain</strong> + ledger credits · optional operator Ed25519 signatures</li>
-    <li><strong>10-node public mesh</strong> · PWA client · Docker/GHCR · GitHub Pages site</li>
-  </ul>
-  <p style="margin:12px 0 0;font-size:13px;color:#71717a">Source: <a href="https://github.com/Mr-A01/Nyx" style="color:#a78bfa">github.com/Mr-A01/Nyx</a> · Live site: <a href="./" style="color:#a78bfa">home</a> · Docs: <a href="documentation.html" style="color:#a78bfa">documentation.html</a></p>
+<section id="nyx-status-2026" style="max-width:920px;margin:28px auto 20px;padding:22px 24px;border:1px solid rgba(124,58,237,.4);border-radius:16px;background:linear-gradient(165deg,rgba(124,58,237,.1),rgba(3,3,5,.4));font-family:Inter,system-ui,sans-serif;color:#e4e4e7;box-shadow:0 12px 40px rgba(0,0,0,.25)">
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:12px">
+    <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#a78bfa;font-weight:700">Living document · protocol vs implementation</div>
+    <div style="font-size:12px;color:#71717a;font-family:ui-monospace,monospace">main · modular v1.44 · API v3</div>
+  </div>
+  <h2 style="font-size:1.35rem;margin:0 0 12px;color:#fff;letter-spacing:-0.02em">What is specified here, and what ships today</h2>
+  <p style="margin:0 0 14px;color:#a1a1aa;line-height:1.65;font-size:14.5px">
+    This whitepaper defines NYX as a <strong style="color:#e4e4e7">federated, E2EE communication protocol</strong> with terminal-native clients and minimized relay authority.
+    The reference implementation at <a href="https://github.com/Mr-A01/Nyx" style="color:#c4b5fd;text-decoration:none;border-bottom:1px solid rgba(196,181,253,.35)">github.com/Mr-A01/Nyx</a> is a production mesh of PHP relays plus a browser PWA — not a theoretical sketch.
+  </p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:14px">
+    <div style="padding:14px 14px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)">
+      <div style="font-size:11px;color:#a78bfa;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Protocol core</div>
+      <ul style="margin:0;padding-left:1.1rem;color:#d4d4d8;font-size:13.5px;line-height:1.55">
+        <li>API v3 identity, spaces, messages</li>
+        <li>Client-side E2EE (ciphertext at rest on relay)</li>
+        <li>Access control on conversation membership</li>
+      </ul>
+    </div>
+    <div style="padding:14px 14px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)">
+      <div style="font-size:11px;color:#a78bfa;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Federation &amp; ops</div>
+      <ul style="margin:0;padding-left:1.1rem;color:#d4d4d8;font-size:13.5px;line-height:1.55">
+        <li>Multi-domain relay topology + gossip</li>
+        <li>Peer URL SSRF guards · optional peer HMAC</li>
+        <li><code style="color:#c4b5fd">/api/v3/ops/selftest</code> · network · GC</li>
+      </ul>
+    </div>
+    <div style="padding:14px 14px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)">
+      <div style="font-size:11px;color:#a78bfa;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Incentives</div>
+      <ul style="margin:0;padding-left:1.1rem;color:#d4d4d8;font-size:13.5px;line-height:1.55">
+        <li><strong>Activity-metered</strong> NYX credits</li>
+        <li>message_relay · probes · storage · selftest</li>
+        <li>Local work-chain + ledger (not PoW mining)</li>
+      </ul>
+    </div>
+  </div>
+  <p style="margin:0;font-size:13px;color:#71717a;line-height:1.5">
+    Operator docs: <a href="documentation.html" style="color:#a78bfa">documentation.html</a>
+    · Install notes in-repo: <code style="color:#a1a1aa">docs/INSTALL.md</code>, <code style="color:#a1a1aa">docs/MINING.md</code>, <code style="color:#a1a1aa">docs/NODE.md</code>
+  </p>
 </section>
 
 <div style="display:flex;gap:14px">
@@ -928,19 +956,19 @@
     <div class="page-content">
       <div class="section-num" data-i18n="s1.section.num">Section 01</div>
       <h1 data-i18n="s1.title">Executive Summary</h1>
-      <p data-i18n="s1.p1">NYX is a <strong>terminal-native, distributed messaging and developer communication platform</strong> designed for engineers, security researchers, infrastructure operators, and technical communities. Named after Nyx — the Greek personification of night — the system embodies darkness, silence, mystery, and the unknown as <em>design philosophy</em>, not fantasy lore.</p>
-      <p data-i18n="s1.p2">The platform delivers a privacy-preserving, cryptographically verifiable communication layer built on a federated relay network. The primary client is implemented in <strong>Python</strong>, optimized for TTY/SSH/tmux environments. The primary server stack is <strong>PHP</strong>, designed for clean module separation, horizontal scaling, and operational simplicity.</p>
+      <p data-i18n="s1.p1">NYX is a <strong>federated, privacy-first messaging protocol</strong> with a terminal-native philosophy and a practical relay implementation. It is built for engineers, operators, and communities who need encrypted communication without surrendering the network to a single cloud landlord. Named after Nyx — night as <em>design posture</em>: quiet defaults, minimal telemetry, and honest limits.</p>
+      <p data-i18n="s1.p2">The reference network is a mesh of <strong>PHP modular relays</strong> (API v3) that store ciphertext and membership metadata — not message meaning. Clients include a <strong>browser PWA</strong> in production; terminal clients remain a first-class design target. Relays federate over gossip, optional peer authentication, and operator tooling (<code>selftest</code>, mesh health, maintenance GC).</p>
 
       <h3 data-i18n="s1.h3.1">Key Architectural Properties</h3>
       <ul>
-        <li data-i18n="s1.list.1"><strong>Terminal-first</strong> — keyboard-driven, minimal redraw, monochrome-capable</li>
-        <li data-i18n="s1.list.2"><strong>End-to-end encrypted</strong> — private messages use X3DH/PQXDH + Double Ratchet</li>
-        <li data-i18n="s1.list.3"><strong>Federated relays</strong> — minimized authority, no single point of failure</li>
-        <li data-i18n="s1.list.4"><strong>Cryptographic identity</strong> — no email required for account creation</li>
-        <li data-i18n="s1.list.5"><strong>Verifiable software</strong> — signed releases, Merkle integrity trees, atomic updates</li>
-        <li data-i18n="s1.list.6"><strong>Evidence-based trust</strong> — reputation system with Sybil resistance</li>
-        <li data-i18n="s1.list.7"><strong>Contribution-based economy</strong> — proof-of-service, not proof-of-work</li>
-        <li data-i18n="s1.list.8"><strong>Defense-in-depth</strong> — multiple security layers, honest about limitations</li>
+        <li data-i18n="s1.list.1"><strong>Client-held secrets</strong> — E2EE where enabled; relays prefer ciphertext</li>
+        <li data-i18n="s1.list.2"><strong>Federated relays</strong> — multi-domain mesh, no single operator monopoly</li>
+        <li data-i18n="s1.list.3"><strong>Protocol v3 APIs</strong> — identity, spaces, messages, devices, federation</li>
+        <li data-i18n="s1.list.4"><strong>Cryptographic identity</strong> — account without email gatekeeping</li>
+        <li data-i18n="s1.list.5"><strong>Shared-hosting capable</strong> — <code>public/</code> document root · Docker/GHCR optional</li>
+        <li data-i18n="s1.list.6"><strong>Activity-metered incentives</strong> — credits for real relay work, not idle hashing</li>
+        <li data-i18n="s1.list.7"><strong>Local work-chain + ledger</strong> — verifiable node history toward settlement</li>
+        <li data-i18n="s1.list.8"><strong>Defense-in-depth</strong> — ACL, rate limits, path jail, audit-driven hardening</li>
       </ul>
 
       <div class="callout callout-info">
@@ -2862,8 +2890,8 @@
           // Section 1
           "s1.section.num": "Section 01",
           "s1.title": "Executive Summary",
-          "s1.p1": "NYX is a <strong>terminal-native, distributed messaging and developer communication platform</strong> designed for engineers, security researchers, infrastructure operators, and technical communities. Named after Nyx — the Greek personification of night — the system embodies darkness, silence, mystery, and the unknown as <em>design philosophy</em>, not fantasy lore.",
-          "s1.p2": "The platform delivers a privacy-preserving, cryptographically verifiable communication layer built on a federated relay network. The primary client is implemented in <strong>Python</strong>, optimized for TTY/SSH/tmux environments. The primary server stack is <strong>PHP</strong>, designed for clean module separation, horizontal scaling, and operational simplicity.",
+          "s1.p1": "NYX is a <strong>federated, privacy-first messaging protocol</strong> with a terminal-native philosophy and a practical relay implementation. Built for engineers and operators who need encrypted communication without a single cloud landlord.",
+          "s1.p2": "The reference network is a mesh of <strong>PHP modular relays</strong> (API v3). Clients include a production <strong>browser PWA</strong>; terminal clients remain a design target. Relays federate with gossip, optional peer auth, and operator selftest/mesh tooling.",
           "s1.h3.1": "Key Architectural Properties",
           "s1.list.1": "<strong>Terminal-first</strong> — keyboard-driven, minimal redraw, monochrome-capable",
           "s1.list.2": "<strong>End-to-end encrypted</strong> — private messages use X3DH/PQXDH + Double Ratchet",

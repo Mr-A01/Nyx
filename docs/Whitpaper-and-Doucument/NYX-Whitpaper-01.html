@@ -769,14 +769,21 @@
 </head>
 <body>
 
-<div id="nyx-site-bar" style="position:sticky;top:0;z-index:9999;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 16px;background:#030305;border-bottom:1px solid #1e1e2a;font-family:Inter,system-ui,sans-serif;font-size:13px;color:#a1a1aa">
-  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-    <a href="./" style="color:#a78bfa;text-decoration:none;font-weight:600">NYX Site</a>
-    <span style="opacity:.4">/</span>
-    <span style="color:#e4e4e7">Whitepaper v3</span>
-    <span style="opacity:.5">· updated for activity-metered mining · mesh relays · API v3</span>
-  </div>
-  <div style="display:flex;gap:14px">
+<section id="nyx-status-2026" style="max-width:920px;margin:24px auto 8px;padding:20px 22px;border:1px solid rgba(124,58,237,.35);border-radius:14px;background:linear-gradient(180deg,rgba(124,58,237,.08),rgba(0,0,0,.15));font-family:Inter,system-ui,sans-serif;color:#e4e4e7">
+  <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#a78bfa;font-weight:700;margin-bottom:8px">Project status · 2026</div>
+  <h2 style="font-size:1.25rem;margin:0 0 10px;color:#fff">Implementation aligned with the live NYX mesh</h2>
+  <p style="margin:0 0 12px;color:#a1a1aa;line-height:1.55;font-size:14px">This whitepaper describes the protocol vision. The production tree on GitHub (<code style="color:#c4b5fd">Mr-A01/Nyx</code>) currently ships:</p>
+  <ul style="margin:0;padding-left:1.2rem;color:#d4d4d8;font-size:14px;line-height:1.6">
+    <li><strong>Protocol v3</strong> modular PHP relays (hexagonal <code style="color:#c4b5fd">app/Modules</code>)</li>
+    <li><strong>E2EE-first messaging</strong> with AccessGuard, session auth, federation gossip + SSRF guards</li>
+    <li><strong>Activity-metered mining</strong> — rewards for real <code style="color:#c4b5fd">message_relay</code>, probes, storage, selftest (not PoW hashing on shared hosts)</li>
+    <li><strong>Local work-chain</strong> + ledger credits · optional operator Ed25519 signatures</li>
+    <li><strong>10-node public mesh</strong> · PWA client · Docker/GHCR · GitHub Pages site</li>
+  </ul>
+  <p style="margin:12px 0 0;font-size:13px;color:#71717a">Source: <a href="https://github.com/Mr-A01/Nyx" style="color:#a78bfa">github.com/Mr-A01/Nyx</a> · Live site: <a href="./" style="color:#a78bfa">home</a> · Docs: <a href="documentation.html" style="color:#a78bfa">documentation.html</a></p>
+</section>
+
+<div style="display:flex;gap:14px">
     <a href="./" style="color:#a1a1aa;text-decoration:none">Home</a>
     <a href="./documentation.html" style="color:#a1a1aa;text-decoration:none">Documentation</a>
     <a href="https://github.com/Mr-A01/Nyx" style="color:#a1a1aa;text-decoration:none">GitHub</a>

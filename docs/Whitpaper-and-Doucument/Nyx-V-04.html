@@ -237,7 +237,7 @@
             <div class="text-white font-bold text-sm leading-none tracking-tight" data-i18n="brand.name">NYX Protocol</div>
             <div class="text-[10px] font-mono text-muted mt-1 flex items-center gap-1.5">
               <span class="status-dot bg-mint text-mint"></span>
-              <span data-i18n="version.label">v3.0.0 • stable</span>
+              <span data-i18n="version.label">v1.44-modular • stable</span>
             </div>
           </div>
         </div>
@@ -283,22 +283,25 @@
             <div class="relative">
               <div class="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-border bg-surface/50 backdrop-blur-sm mb-8">
                 <span class="status-dot bg-mint text-mint"></span>
-                <span class="text-[11px] font-mono text-soft" data-i18n="cover.badge">WHITEPAPER v3.0 — FULL TECHNICAL SPECIFICATION</span>
+                <span class="text-[11px] font-mono text-soft" data-i18n="cover.badge">NYX MESH · API v3 · ACTIVITY-METERED RELAYS</span>
               </div>
               <h1 class="text-5xl md:text-6xl lg:text-[5.5rem] font-black tracking-tight leading-[.95] mb-6">
                 <span class="text-white" data-i18n="cover.born">Born from</span><br>
                 <span class="grad-text" data-i18n="cover.night">the night.</span>
               </h1>
               <p class="text-lg md:text-xl text-soft max-w-2xl leading-relaxed mb-10" data-i18n="cover.desc">
-                A terminal-native, distributed communication protocol. Quiet, federated, difficult to censor, cryptographically verifiable. Built for those who work beneath the surface.
+                A terminal-native, federated E2EE messenger mesh. Shared-hosting relays, Protocol v3 APIs, activity-metered NYX credits for real relay work — not idle hashing. Quiet, difficult to censor, cryptographically verifiable.
               </p>
               <div class="flex flex-wrap gap-3">
                 <button onclick="switchTab('deploy')" class="btn-primary text-white px-6 py-3 rounded-lg text-sm font-semibold flex items-center gap-2.5" data-i18n="btn.start">
                   <span class="flex items-center gap-2.5"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>Start Building</span>
                 </button>
-                <button onclick="switchTab('whitepaper')" class="btn-ghost text-soft px-6 py-3 rounded-lg text-sm font-semibold flex items-center gap-2.5" data-i18n="btn.whitepaper">
+                <a href="whitepaper.html" class="btn-ghost text-soft px-6 py-3 rounded-lg text-sm font-semibold flex items-center gap-2.5" data-i18n="btn.whitepaper">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Read Whitepaper
-                </button>
+                </a>
+                <a href="documentation.html" class="btn-ghost text-soft px-6 py-3 rounded-lg text-sm font-semibold flex items-center gap-2.5">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Documentation
+                </a>
                 <button onclick="openCmdPalette()" class="btn-ghost text-soft px-6 py-3 rounded-lg text-sm font-semibold flex items-center gap-2.5">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span data-i18n="btn.search">Search</span>
                   <kbd class="text-[10px] font-mono bg-surface px-1.5 py-0.5 rounded border border-border">⌘K</kbd>
@@ -2497,6 +2500,8 @@
     // =============================================================
     let currentTab='overview';
     function switchTab(id){
+      if(id==='whitepaper'){location.href='whitepaper.html';return;}
+      if(id==='docs'){location.href='documentation.html';return;}
       if(id===currentTab)return;
       const cp=document.getElementById('page-'+currentTab),tp=document.getElementById('page-'+id);
       if(!tp)return;
@@ -2702,12 +2707,5 @@
 
     console.log('✅ NYX site with complete bilingual support (EN/FA) loaded.');
   </script>
-
-<div id="nyx-ext-links" style="position:fixed;right:16px;bottom:16px;z-index:99999;display:flex;flex-direction:column;gap:8px;font-family:Inter,system-ui,sans-serif">
-  <a href="whitepaper.html" style="background:#0f0f18;border:1px solid #1e1e2a;color:#e4e4e7;padding:10px 14px;border-radius:10px;text-decoration:none;font-size:12px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.45)">Whitepaper ↗</a>
-  <a href="documentation.html" style="background:#0f0f18;border:1px solid #1e1e2a;color:#e4e4e7;padding:10px 14px;border-radius:10px;text-decoration:none;font-size:12px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.45)">Documentation ↗</a>
-  <a href="https://github.com/Mr-A01/Nyx" style="background:#7c3aed;border:1px solid #7c3aed;color:#fff;padding:10px 14px;border-radius:10px;text-decoration:none;font-size:12px;font-weight:600;box-shadow:0 8px 30px rgba(124,58,237,.35)">GitHub ↗</a>
-</div>
-
 </body>
 </html>

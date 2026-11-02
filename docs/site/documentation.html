@@ -576,52 +576,6 @@
 </head>
 <body>
 
-<section id="nyx-status-2026" style="max-width:920px;margin:28px auto 20px;padding:22px 24px;border:1px solid rgba(99,102,241,.4);border-radius:16px;background:linear-gradient(165deg,rgba(99,102,241,.1),rgba(3,3,5,.35));font-family:Inter,system-ui,sans-serif;color:#e4e4e7;box-shadow:0 12px 40px rgba(0,0,0,.25)">
-  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:12px">
-    <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#818cf8;font-weight:700">Operator &amp; developer map</div>
-    <div style="font-size:12px;color:#71717a;font-family:ui-monospace,monospace">aligned with github.com/Mr-A01/Nyx</div>
-  </div>
-  <h2 style="font-size:1.3rem;margin:0 0 12px;color:#fff;letter-spacing:-0.02em">How to read this documentation</h2>
-  <p style="margin:0 0 14px;color:#a1a1aa;line-height:1.65;font-size:14.5px">
-    Long-form narrative docs below describe the platform model. For the <strong style="color:#e4e4e7">exact files and endpoints that run in production</strong>, prefer the repository paths and API surface listed here.
-  </p>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
-    <div style="padding:14px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)">
-      <div style="font-size:11px;color:#818cf8;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Deploy</div>
-      <ul style="margin:0;padding-left:1.1rem;color:#d4d4d8;font-size:13.5px;line-height:1.55">
-        <li><code style="color:#c4b5fd">docs/INSTALL.md</code> — shared hosting, <code style="color:#c4b5fd">public/</code> root</li>
-        <li>Docker: <code style="color:#c4b5fd">ghcr.io/mr-a01/nyx</code></li>
-        <li>Health: <code style="color:#c4b5fd">GET /api/v3/ops/selftest</code></li>
-      </ul>
-    </div>
-    <div style="padding:14px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)">
-      <div style="font-size:11px;color:#818cf8;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Core API v3</div>
-      <ul style="margin:0;padding-left:1.1rem;color:#d4d4d8;font-size:13.5px;line-height:1.55">
-        <li>Auth · spaces · messages · devices</li>
-        <li>Federation gossip · peers · topology</li>
-        <li>Mining · ledger · chain · settlement</li>
-      </ul>
-    </div>
-    <div style="padding:14px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)">
-      <div style="font-size:11px;color:#818cf8;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Security &amp; ops</div>
-      <ul style="margin:0;padding-left:1.1rem;color:#d4d4d8;font-size:13.5px;line-height:1.55">
-        <li><code style="color:#c4b5fd">SECURITY.md</code> · audit tracker #49</li>
-        <li><code style="color:#c4b5fd">POST /api/v3/ops/gc</code> maintenance</li>
-        <li><code style="color:#c4b5fd">docs/MINING.md</code> activity meter rules</li>
-      </ul>
-    </div>
-  </div>
-  <p style="margin:14px 0 0;font-size:13px;color:#71717a">Whitepaper: <a href="whitepaper.html" style="color:#a78bfa">whitepaper.html</a> · Product site: <a href="./" style="color:#a78bfa">home</a></p>
-</section>
-
-<div style="display:flex;gap:14px">
-    <a href="./" style="color:#a1a1aa;text-decoration:none">Home</a>
-    <a href="./whitepaper.html" style="color:#a1a1aa;text-decoration:none">Whitepaper</a>
-    <a href="https://github.com/Mr-A01/Nyx" style="color:#a1a1aa;text-decoration:none">GitHub</a>
-  </div>
-</div>
-
-
 <div class="scroll-progress" id="scrollProgress"></div>
 
 <!-- ===== SIDEBAR ===== -->
@@ -734,18 +688,18 @@
         "overview.card5.title": "🧠 AI Assistant",
         "overview.card5.desc": "Optional local/remote AI for coding, debugging, and documentation. Strict sandboxing.",
         "overview.card6.title": "💱 Token Economy",
-        "overview.card6.desc": "NYX credits for anti-spam and relay incentives. Activity-metered proof-of-service on each node; local work-chain seals rewards — not global PoW mining.",
+        "overview.card6.desc": "NYX token for anti‑spam, relay rewards, and governance. BFT consensus, not PoW.",
 
         // Section: Getting Started
         "getting-started.tag": "Getting Started",
         "getting-started.title": "Quick Start Guide",
-        "getting-started.p1": "Start with a relay from the public mesh or your own node. Production relays speak HTTP API v3 under `/nyx` (or your chosen base). The browser PWA is at `/client.html`. Terminal clients remain compatible with the same API surface.",
+        "getting-started.p1": "This guide will help you set up NYX client and connect to a relay server. Prerequisites: Python 3.11+ and basic terminal familiarity.",
         "getting-started.h3.install": "Installation",
-        "getting-started.install.code": "# Shared hosting: point web root at public/\n# or Docker:\ndocker pull ghcr.io/mr-a01/nyx:latest",
+        "getting-started.install.code": "pip install nyx-client",
         "getting-started.h3.config": "Configuration",
-        "getting-started.config.p": "On relays, copy <code>.env.example</code> → <code>.env</code>, ensure <code>data/</code> is writable and not web-exposed. Clients register via <code>POST /api/v3/auth/register</code> and store the session token.",
+        "getting-started.config.p": "Create a configuration file at <code>~/.config/nyx/config.toml</code> with your identity and server settings.",
         "getting-started.h3.connect": "Connect to a Relay",
-        "getting-started.connect.p": "Open <code>/client.html</code> on a mesh node, or call <code>GET /api/v3/ops/selftest</code> to verify the relay. Discover peers via <code>GET /api/v3/ops/network</code>.",
+        "getting-started.connect.p": "Run <code>nyx --connect relay1.nyx.network</code> to connect. You'll be prompted to generate a new identity if you don't have one.",
         "getting-started.callout.title": "First Run",
         "getting-started.callout.p": "On first run, NYX will generate an Ed25519 identity key and save it locally. Keep this key safe — it is your identity on the network.",
 
@@ -874,7 +828,7 @@
         // Section: Deployment
         "deploy.tag": "Deployment",
         "deploy.title": "Production Deployment",
-        "deploy.p1": "Production mesh nodes run on ordinary shared hosting (Apache/Nginx + PHP 8.1+) with JSON FileStore under data/, or via Docker (ghcr.io/mr-a01/nyx). Optional SQLite is an index only — FileStore remains source of truth. Scale out by adding domains to the federation topology.",
+        "deploy.p1": "NYX can be deployed at various scales. The required stack includes Linux, PHP 8.3+ with Swoole, PostgreSQL, Redis, Nginx/Caddy, Vault, Prometheus, and Grafana.",
         "deploy.table.scale": "Scale",
         "deploy.table.users": "Users",
         "deploy.table.arch": "Architecture",
@@ -999,10 +953,10 @@
         // Section: Changelog
         "changelog.tag": "Changelog",
         "changelog.title": "Release History",
-        "changelog.v3.1": "modular v1.44 – 2026-11",
-        "changelog.v3.1.desc": "Activity-metered mining, security audit remediation (#49), PWA client, work-chain operator signatures, Docker/GHCR, hardened federation and ACL.",
-        "changelog.v3.0": "API v3 modular – 2025/2026",
-        "changelog.v3.0.desc": "Hexagonal PHP modules, Protocol v3 routes, ledger + local work-chain, federation mesh, shared-hosting layout.",
+        "changelog.v3.1": "v3.1.0 – 2025-03-15",
+        "changelog.v3.1.desc": "Added PQXDH post‑quantum key agreement, improved federation routing, fixed memory leak in sync manager.",
+        "changelog.v3.0": "v3.0.0 – 2025-01-20",
+        "changelog.v3.0.desc": "Major rewrite: new architecture, E2EE by default, token ledger, plugin system, AI assistant.",
         "changelog.v2.5": "v2.5.0 – 2024-11-01",
         "changelog.v2.5.desc": "Added multi‑device support, improved terminal UI, initial reputation system.",
         "changelog.v2.0": "v2.0.0 – 2024-08-15",
@@ -1056,7 +1010,7 @@
         "getting-started.title": "راهنمای شروع سریع",
         "getting-started.p1": "این راهنما به شما کمک می‌کند تا کلاینت NYX را راه‌اندازی کرده و به یک سرور رله متصل شوید. پیش‌نیازها: Python 3.11+ و آشنایی اولیه با ترمینال.",
         "getting-started.h3.install": "نصب",
-        "getting-started.install.code": "# Shared hosting: point web root at public/\n# or Docker:\ndocker pull ghcr.io/mr-a01/nyx:latest",
+        "getting-started.install.code": "pip install nyx-client",
         "getting-started.h3.config": "پیکربندی",
         "getting-started.config.p": "یک فایل پیکربندی در مسیر <code>~/.config/nyx/config.toml</code> با تنظیمات هویت و سرور خود ایجاد کنید.",
         "getting-started.h3.connect": "اتصال به یک رله",
@@ -1471,7 +1425,7 @@
           <div class="card"><h4 data-i18n="overview.card3.title">🖥️ Terminal‑First TUI</h4><p data-i18n="overview.card3.desc">Built for SSH, tmux, and low‑bandwidth environments. Keyboard‑driven, minimal redraw.</p></div>
           <div class="card"><h4 data-i18n="overview.card4.title">🔍 Verifiable Integrity</h4><p data-i18n="overview.card4.desc">Signed releases, Merkle integrity trees, atomic updates with rollback.</p></div>
           <div class="card"><h4 data-i18n="overview.card5.title">🧠 AI Assistant</h4><p data-i18n="overview.card5.desc">Optional local/remote AI for coding, debugging, and documentation. Strict sandboxing.</p></div>
-          <div class="card"><h4 data-i18n="overview.card6.title">💱 Token Economy</h4><p data-i18n="overview.card6.desc">NYX credits for anti-spam and relay incentives. Activity-metered proof-of-service on each node; local work-chain seals rewards — not global PoW mining.</p></div>
+          <div class="card"><h4 data-i18n="overview.card6.title">💱 Token Economy</h4><p data-i18n="overview.card6.desc">NYX token for anti‑spam, relay rewards, and governance. BFT consensus, not PoW.</p></div>
         </div>
       `,
       'getting-started': `

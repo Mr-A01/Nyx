@@ -43,3 +43,8 @@
 - Mining: nonce replay protection, timestamp window, ref dedup
 - SqliteStore documented as optional secondary index only
 - MINING.md updated with anti-abuse controls
+
+## Batch 6
+- ActivityMeter: server-side message_relay / selftest_pass accounting
+- Mining submit claims from meter for useful types (no empty self-report reward)
+- README / CONTRIBUTING / SECURITY professional pack + brand SVGs

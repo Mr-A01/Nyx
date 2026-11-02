@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="480" viewBox="0 0 1280 480">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0B0F17"/>
+      <stop offset="50%" style="stop-color:#121A2B"/>
+      <stop offset="100%" style="stop-color:#0E1522"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3B6FD4"/>
+      <stop offset="100%" style="stop-color:#6C5CE7"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1280" height="480" fill="url(#bg)"/>
+  <circle cx="980" cy="120" r="180" fill="#3B6FD4" opacity="0.08"/>
+  <circle cx="200" cy="400" r="140" fill="#6C5CE7" opacity="0.07"/>
+  <!-- mesh nodes -->
+  <g stroke="#3B6FD4" stroke-width="1.5" opacity="0.45">
+    <line x1="820" y1="160" x2="940" y2="220"/>
+    <line x1="940" y1="220" x2="1050" y2="170"/>
+    <line x1="940" y1="220" x2="980" y2="320"/>
+    <line x1="820" y1="160" x2="880" y2="300"/>
+  </g>
+  <g fill="#5B8DEF">
+    <circle cx="820" cy="160" r="7"/><circle cx="940" cy="220" r="9"/><circle cx="1050" cy="170" r="6"/><circle cx="980" cy="320" r="6"/><circle cx="880" cy="300" r="5"/>
+  </g>
+  <text x="80" y="200" font-family="Segoe UI, system-ui, sans-serif" font-size="72" font-weight="700" fill="#E8EEF8">NYX</text>
+  <text x="80" y="255" font-family="Segoe UI, system-ui, sans-serif" font-size="28" fill="#8B9BB4">Federated E2EE Messenger · Work-Chain Relays</text>
+  <rect x="80" y="290" width="160" height="4" rx="2" fill="url(#accent)" filter="url(#glow)"/>
+  <text x="80" y="340" font-family="Segoe UI, system-ui, sans-serif" font-size="18" fill="#6B7C99">Protocol v3 · Mesh · Mining · Settlement · PWA</text>
+</svg>

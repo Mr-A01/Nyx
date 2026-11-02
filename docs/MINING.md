@@ -1,6 +1,9 @@
 # NYX Mining & Work-Chain
 
 ## Overview
+
+**Model: activity-metered.** Nodes record useful work (e.g. `message_relay` after a successful send, `selftest_pass`). Miners claim **unclaimed** units from that meter — submitting types with zero metered activity yields no reward. Nonces/signatures are anti-replay controls, not proof-of-work hashing.
+
 Relay operators earn **NYX** credits for useful network work. Rewards are written to the off-chain ledger and sealed into a local **work-chain** (hash-linked, optionally operator-signed blocks).
 
 > This is **not** global consensus. It is verifiable local history + mesh observability toward settlement.

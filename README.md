@@ -53,3 +53,12 @@ Proprietary — all rights reserved.
 4. **Never dual-write blindly** — storage format stays identical (`storage/data`).
 
 See `docs/architecture/IMPLEMENTATION-STATUS.md`.
+
+## Docker
+
+```bash
+docker pull ghcr.io/mr-a01/nyx:latest
+docker run -p 8080:80 -v nyx-data:/var/www/html/data ghcr.io/mr-a01/nyx:latest
+```
+
+Image builds on push to `main` via GitHub Actions → GHCR.

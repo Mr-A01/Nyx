@@ -31,7 +31,7 @@ final class PushController {
         $b = $r->json() ?? [];
         $uid = AuthContext::userId($r, $b);
         if ($uid === '') $uid = (string)($b['user_id'] ?? $r->query('user_id') ?? '');
-        if ($uid === '') return ApiEnvelope::error('user_id required', 422);
+        if ($uid === '') return ApiEnvelope::error('unauthorized', 401);
         $s = $this->store();
         if (in_array($r->method(), ['POST', 'PUT'], true)) {
             $prefs = ['user_id' => $uid, 'prefs' => $b['prefs'] ?? $b, 'updated_ms' => ApiEnvelope::nowMs()];
@@ -45,7 +45,7 @@ final class PushController {
         $b = $r->json() ?? [];
         $uid = strtolower(trim(AuthContext::userId($r, $b)));
         if ($uid === '') $uid = strtolower(trim((string)($b['user_id'] ?? $r->query('user_id') ?? '')));
-        if ($uid === '') return ApiEnvelope::error('user_id required', 422);
+        if ($uid === '') return ApiEnvelope::error('unauthorized', 401);
         $s = $this->store();
         $row = $s->get("users/{$uid}.json");
         if (!is_array($row)) $row = $s->get("identity/usernames/{$uid}.json");
@@ -66,8 +66,7 @@ final class PushController {
     public function markRead(Request $r): JsonResponse {
         $b = $r->json() ?? [];
         $uid = strtolower(trim(AuthContext::userId($r, $b)));
-        if ($uid === '') $uid = strtolower(trim((string)($b['user_id'] ?? '')));
-        if ($uid === '') return ApiEnvelope::error('user_id required', 422);
+        if ($uid === '') return ApiEnvelope::error('unauthorized', 401);
         $s = $this->store();
         $row = $s->get("users/{$uid}.json");
         if (!is_array($row)) $row = $s->get("identity/usernames/{$uid}.json");

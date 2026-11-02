@@ -6,6 +6,7 @@ use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
 use Nyx\Shared\Infrastructure\IdGenerator\UlidLikeId;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 use Nyx\Shared\Infrastructure\Http\AuthContext;
+use Nyx\Shared\Infrastructure\Messaging\AccessGuard;
 
 final class SpaceController {
     private function store(): FileStore {
@@ -198,6 +199,13 @@ final class SpaceController {
         $sid = $this->resolveSpaceId($sid);
         $rec = $this->store()->get("spaces/{$sid}.json");
         if (!$rec) return ApiEnvelope::error('space not found', 404);
+        $uid = AuthContext::userId($r);
+        $public = !empty($rec['is_public']) || !empty($rec['public']);
+        if (!$public) {
+            if ($uid === '' || !AccessGuard::make()->canRead($sid, $uid)) {
+                return ApiEnvelope::error('forbidden', 403);
+            }
+        }
         $members = $this->membersOf($sid);
         $rec['members'] = array_values(array_map(static fn($m) => (string)($m['user_id'] ?? ''), $members));
         $rec['member_count'] = count($members);
@@ -492,6 +500,11 @@ final class SpaceController {
     public function members(Request $r): JsonResponse {
         $sid = (string)($r->query('space_id') ?? ($r->json()['space_id'] ?? ''));
         if ($sid === '') return ApiEnvelope::error('space_id required', 422);
+        $sid = $this->resolveSpaceId($sid);
+        $uid = AuthContext::userId($r);
+        if ($uid === '' || !AccessGuard::make()->canRead($sid, $uid)) {
+            return ApiEnvelope::error('forbidden', 403);
+        }
         $members = $this->membersOf($sid);
         return ApiEnvelope::ok(['space_id' => $sid, 'members' => $members, 'items' => $members, 'count' => count($members)]);
     }

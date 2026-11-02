@@ -136,6 +136,7 @@ final class OpsController {
             if($host!==''&&$selfHost!==''&&($host===$selfHost||str_contains($base,'//'.$selfHost))) continue;
             [$ok,$code,$ms]=self::probe($base);
             $peers[]=['url'=>$base,'host'=>$host,'ok'=>$ok,'http'=>$code,'latency_ms'=>$ms,'is_self'=>false];
+            if($ok){ try{ ActivityMeter::make()->record('peer_heartbeat',1); ActivityMeter::make()->record('relay_probe',1);}catch(\Throwable $e){} }
             $relays[]=self::relayRow($host,$base,$ok,$ms,$now,false);
         }
         $links=[];

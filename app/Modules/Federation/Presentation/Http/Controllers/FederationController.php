@@ -9,6 +9,7 @@ use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
 use Nyx\Shared\Infrastructure\IdGenerator\UlidLikeId;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 use Nyx\Core\Security\Authentication\PeerAuthenticator;
+use Nyx\Modules\Mining\Domain\ActivityMeter;
 
 final class FederationController
 {
@@ -182,6 +183,7 @@ final class FederationController
                 $s->put($key, $idx);
             }
             $stored++;
+            try { ActivityMeter::make()->record('storage_keep', 1); ActivityMeter::make()->record('message_relay', 1); } catch (\Throwable $e) {}
         }
         $qid = UlidLikeId::generate();
         return ApiEnvelope::ok(['queued' => true, 'id' => $qid, 'stored' => $stored, 'received' => count($messages)]);

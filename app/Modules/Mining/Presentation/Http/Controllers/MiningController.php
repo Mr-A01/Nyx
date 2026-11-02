@@ -316,18 +316,32 @@ final class MiningController
         }
         $reward = 0;
         $accepted = [];
+        $meter = ActivityMeter::make();
+        $meteredTypes = ['message_relay', 'storage_keep', 'relay_probe', 'peer_heartbeat', 'selftest_pass'];
         foreach ($works as $w) {
             $type = (string)($w['type'] ?? '');
             if (!isset(self::RATES[$type])) {
                 continue;
             }
-            $units = max(0, min(100, (int)($w['units'] ?? 1)));
-            if ($units < 1) {
+            $want = max(0, min(100, (int)($w['units'] ?? 1)));
+            if ($want < 1) {
                 continue;
+            }
+            if (in_array($type, $meteredTypes, true)) {
+                $claim = $meter->claim($type, $want);
+                $units = (int)$claim['claimed'];
+                if ($units < 1) {
+                    continue;
+                }
+            } else {
+                $units = $want;
             }
             $gain = self::RATES[$type] * $units;
             $reward += $gain;
-            $accepted[] = ['type' => $type, 'units' => $units, 'reward' => $gain, 'ref' => (string)($w['ref'] ?? '')];
+            $accepted[] = ['type' => $type, 'units' => $units, 'reward' => $gain, 'ref' => (string)($w['ref'] ?? ''), 'source' => 'meter'];
+        }
+        if ($accepted === [] || $reward < 1) {
+            return ApiEnvelope::error('no metered work available', 422);
         }
         $day = $this->dayKey();
         $dayRec = $this->store()->get("mining/daily/{$uid}/{$day}.json") ?? ['claimed' => 0, 'day' => $day, 'user_id' => $uid];

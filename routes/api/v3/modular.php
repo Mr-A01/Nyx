@@ -30,6 +30,7 @@ $router->get('/api/v3/ops/info', [$ops,'info']);
 $router->get('/api/v3/ops/health', [$ops,'health']);
 $router->get('/api/v3/health', [$ops,'health']);
 $router->get('/api/v3/ops/selftest', [$ops,'selftest']);
+$router->post('/api/v3/ops/gc', [$ops,'gc']);
 $router->get('/api/v3/ops/metrics', [$ops,'metrics']);
 $router->get('/api/v3/ops/network', [$ops,'network']);
 $router->get('/api/v3/health', [$ops,'health']);

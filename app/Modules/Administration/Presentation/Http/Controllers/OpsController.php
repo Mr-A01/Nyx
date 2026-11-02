@@ -4,6 +4,8 @@ namespace Nyx\Modules\Administration\Presentation\Http\Controllers;
 use Nyx\Core\Http\Request; use Nyx\Core\Http\JsonResponse;
 use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
+use Nyx\Shared\Infrastructure\Http\AuthContext;
+use Nyx\Core\Maintenance\DataGc;
 final class OpsController {
     private static function geo(string $host): array {
         static $map = [
@@ -161,5 +163,20 @@ final class OpsController {
             'generated_at'=>$now,'demo'=>false,'observer'=>$selfHost?:'localhost',
             'version'=>defined('NYX_VERSION')?NYX_VERSION:'1.44.0-modular',
         ]);
+    }
+
+    /**
+     * Manual maintenance GC (authenticated). Also runs opportunistically on traffic.
+     */
+    public function gc(Request $r): JsonResponse
+    {
+        $uid = AuthContext::userId($r);
+        if ($uid === '') {
+            return ApiEnvelope::error('unauthorized', 401);
+        }
+        $stats = DataGc::make()->run(200);
+        $stats['operator'] = $uid;
+        $stats['ran_ms'] = ApiEnvelope::nowMs();
+        return ApiEnvelope::ok($stats);
     }
 }

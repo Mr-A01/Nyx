@@ -6,10 +6,15 @@ namespace Nyx\Core\Maintenance;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 
 /**
- * Opportunistic disk GC for rate buckets and expired sessions (shared-hosting safe).
+ * Opportunistic disk GC for shared-hosting safe cleanup.
+ * Caps work per run so requests stay fast.
  */
 final class DataGc
 {
+    private const MINING_NONCE_TTL_MS = 86_400_000;      // 24h
+    private const MINING_REF_TTL_MS = 86_400_000;        // 24h
+    private const FED_NONCE_TTL_MS = 600_000;            // 10m
+
     public function __construct(private FileStore $store) {}
 
     public static function make(): self
@@ -19,13 +24,16 @@ final class DataGc
     }
 
     /**
-     * @return array{rate_removed:int,sessions_removed:int}
+     * @return array<string,int>
      */
     public function run(int $maxFiles = 80): array
     {
         return [
             'rate_removed' => $this->gcRate($maxFiles),
             'sessions_removed' => $this->gcSessions($maxFiles),
+            'mining_nonces_removed' => $this->gcAgedDir('mining/nonces', self::MINING_NONCE_TTL_MS, 'used_ms', $maxFiles),
+            'mining_refs_removed' => $this->gcAgedDir('mining/refs', self::MINING_REF_TTL_MS, 'claimed_ms', $maxFiles),
+            'federation_nonces_removed' => $this->gcAgedDir('federation/nonces', self::FED_NONCE_TTL_MS, 'used_ms', $maxFiles),
         ];
     }
 
@@ -100,6 +108,35 @@ final class DataGc
             }
             $exp = (int)($data['expires_ms'] ?? 0);
             if ($exp > 0 && $exp < $nowMs) {
+                @unlink($f);
+                $removed++;
+            }
+        }
+        return $removed;
+    }
+
+    private function gcAgedDir(string $rel, int $ttlMs, string $tsKey, int $maxFiles): int
+    {
+        $root = $this->store->root() . '/' . trim($rel, '/');
+        if (!is_dir($root)) {
+            return 0;
+        }
+        $nowMs = (int) floor(microtime(true) * 1000);
+        $removed = 0;
+        $n = 0;
+        foreach (glob($root . '/*.json') ?: [] as $f) {
+            if (++$n > $maxFiles) {
+                break;
+            }
+            $raw = @file_get_contents($f);
+            $data = $raw !== false ? json_decode($raw, true) : null;
+            if (!is_array($data)) {
+                @unlink($f);
+                $removed++;
+                continue;
+            }
+            $ts = (int)($data[$tsKey] ?? $data['expires_ms'] ?? $data['created_ms'] ?? 0);
+            if ($ts <= 0 || ($nowMs - $ts) > $ttlMs) {
                 @unlink($f);
                 $removed++;
             }

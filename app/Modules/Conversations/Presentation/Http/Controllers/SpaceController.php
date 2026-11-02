@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 namespace Nyx\Modules\Conversations\Presentation\Http\Controllers;
+
+use Nyx\Shared\Infrastructure\Fs\SafeFs;
 use Nyx\Core\Http\Request; use Nyx\Core\Http\JsonResponse;
 use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
 use Nyx\Shared\Infrastructure\IdGenerator\UlidLikeId;
@@ -314,7 +316,7 @@ final class SpaceController {
         $uid = AuthContext::userId($r, $b);
         if ($sid === '' || $uid === '') return ApiEnvelope::error('space_id and user_id required', 422);
         $path = $this->store()->root() . "/memberships/{$sid}/{$uid}.json";
-        if (is_file($path)) @unlink($path);
+        SafeFs::unlinkUnder($this->store()->root(), $path);
         return ApiEnvelope::ok(['left' => true, 'space_id' => $sid, 'user_id' => $uid]);
     }
     public function kick(Request $r): JsonResponse {
@@ -336,7 +338,7 @@ final class SpaceController {
             return ApiEnvelope::error('FORBIDDEN: target rank too high', 403);
         }
         $path = $this->store()->root() . "/memberships/{$sid}/{$uid}.json";
-        if (is_file($path)) @unlink($path);
+        SafeFs::unlinkUnder($this->store()->root(), $path);
         $this->audit($sid, $actor, 'kick', $uid, ['target_id'=>$uid]);
         return ApiEnvelope::ok(['kicked' => true, 'space_id' => $sid, 'user_id' => $uid, 'actor_id' => $actor]);
     }
@@ -583,7 +585,7 @@ final class SpaceController {
         if ($decision === 'approve' || $decision === 'approved') {
             $rec = ['space_id' => $sid, 'user_id' => $uid, 'role' => 'member', 'joined_ms' => ApiEnvelope::nowMs()];
             $this->store()->put("memberships/{$sid}/{$uid}.json", $rec);
-            if (is_file($path)) @unlink($path);
+            SafeFs::unlinkUnder($this->store()->root(), $path);
             return ApiEnvelope::ok(['approved' => true, 'space_id' => $sid, 'user_id' => $uid]);
         }
         if (is_array($req)) {
@@ -591,7 +593,7 @@ final class SpaceController {
             $req['decided_ms'] = ApiEnvelope::nowMs();
             $this->store()->put("join_requests/{$sid}/{$uid}.json", $req);
         } elseif (is_file($path)) {
-            @unlink($path);
+            SafeFs::unlinkUnder($this->store()->root(), $path);
         }
         return ApiEnvelope::ok(['rejected' => true, 'space_id' => $sid, 'user_id' => $uid]);
     }
@@ -615,7 +617,7 @@ final class SpaceController {
             return ApiEnvelope::error('FORBIDDEN: target rank too high', 403);
         }
         $path = $this->store()->root() . "/memberships/{$sid}/{$uid}.json";
-        if (is_file($path)) @unlink($path);
+        SafeFs::unlinkUnder($this->store()->root(), $path);
         $ban = [
             'space_id' => $sid, 'user_id' => $uid, 'banned_by' => $actor,
             'banned_ms' => ApiEnvelope::nowMs(), 'reason' => $reason,
@@ -634,7 +636,7 @@ final class SpaceController {
         $auth = $this->assertActor($sid, $actor, 'admin');
         if ($auth !== true) return $auth;
         $path = $this->store()->root() . "/bans/{$sid}/{$uid}.json";
-        if (is_file($path)) @unlink($path);
+        SafeFs::unlinkUnder($this->store()->root(), $path);
         $this->audit($sid, $actor, 'unban', $uid, ['target_id'=>$uid]);
         return ApiEnvelope::ok(['unbanned' => true, 'space_id' => $sid, 'user_id' => $uid]);
     }
@@ -923,7 +925,7 @@ public function openDm(Request $r): JsonResponse {
         ]);
         // also leave membership if group
         $path = $s->root() . "/memberships/{$cid}/{$uid}.json";
-        if (is_file($path)) @unlink($path);
+        SafeFs::unlinkUnder($this->store()->root(), $path);
         return ApiEnvelope::ok(['conversation_id' => $cid, 'user_id' => $uid, 'deleted' => true]);
     }
 
@@ -1012,7 +1014,7 @@ public function openDm(Request $r): JsonResponse {
             $this->store()->put("mutes/{$sid}/{$uid}.json", $rec);
         } else {
             $path = $this->store()->root() . "/mutes/{$sid}/{$uid}.json";
-            if (is_file($path)) @unlink($path);
+            SafeFs::unlinkUnder($this->store()->root(), $path);
         }
         $this->audit($sid, $actor, $muted ? 'mute_member' : 'unmute_member', $uid, ['until_ms' => $until]);
         return ApiEnvelope::ok($rec);

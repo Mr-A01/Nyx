@@ -49,7 +49,7 @@ final class Container
     private function resolveParam(ReflectionParameter $param): mixed
     {
         $type = $param->getType();
-        if ($type && !$type->isBuiltin()) {
+        if ($type instanceof \ReflectionNamedType && !$type->isBuiltin()) {
             return $this->make($type->getName());
         }
         if ($param->isDefaultValueAvailable()) {

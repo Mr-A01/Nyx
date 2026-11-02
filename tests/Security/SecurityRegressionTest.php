@@ -121,6 +121,14 @@ assertTrue($peerAuth->verifyAndConsume($body, $sig, bin2hex(random_bytes(12))), 
 echo "[PASS] Peer replay protection.\n";
 
 $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($tmp, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-foreach ($it as $f) { $f->isDir() ? @rmdir($f->getPathname()) : @unlink($f->getPathname()); }
-@rmdir($tmp);
+foreach ($it as $f) {
+    $p = $f->getPathname();
+    $tmpReal = realpath($tmp);
+    $pReal = realpath($p) ?: $p;
+    if ($tmpReal && is_string($pReal) && str_starts_with((string)$pReal, $tmpReal)) {
+        $f->isDir() ? @rmdir($p) : @unlink($p);
+    }
+}
+$tmpReal = realpath($tmp);
+if ($tmpReal) { @rmdir($tmpReal); }
 echo "=== All Security Regression Tests Passed Successfully ===\n";

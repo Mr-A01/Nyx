@@ -2,6 +2,8 @@
 declare(strict_types=1);
 namespace Nyx\Modules\Identity\Presentation\Http\Controllers;
 
+use Nyx\Shared\Infrastructure\Fs\SafeFs;
+
 use Nyx\Core\Http\Request;
 use Nyx\Core\Http\JsonResponse;
 use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
@@ -75,7 +77,7 @@ final class SecurityController
                 $sid = substr(hash('sha256', $token), 0, 16);
                 if (hash_equals($current, $token) && !$all) continue; // keep current unless forced
                 if ($all || ($target !== '' && hash_equals($target, $sid))) {
-                    @unlink($f);
+                    SafeFs::unlinkUnder(defined('DATA_DIR')?DATA_DIR:(defined('NYX_DATA_DIR')?NYX_DATA_DIR:''), $f);
                     $revoked++;
                 }
             }

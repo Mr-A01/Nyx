@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 namespace Nyx\Modules\Presence\Presentation\Http\Controllers;
+
+use Nyx\Shared\Infrastructure\Fs\SafeFs;
 use Nyx\Core\Http\Request; use Nyx\Core\Http\JsonResponse;
 use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
@@ -65,7 +67,7 @@ final class PresenceController {
                 $rec = json_decode((string)file_get_contents($f), true);
                 if (!is_array($rec)) continue;
                 $exp = (int)($rec['expires_ms'] ?? 0);
-                if ($exp > 0 && $exp < $now) { @unlink($f); continue; }
+                if ($exp > 0 && $exp < $now) { SafeFs::unlinkUnder($this->dataRoot(), $f); continue; }
                 $items[] = $rec;
             }
         }

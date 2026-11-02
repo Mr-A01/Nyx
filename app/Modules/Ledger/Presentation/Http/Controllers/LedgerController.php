@@ -190,4 +190,31 @@ final class LedgerController
         return ApiEnvelope::ok($payload);
     }
 
+
+    /**
+     * Exclusive lock around balance mutations for a user id.
+     * @template T
+     * @param callable():T $fn
+     * @return T
+     */
+    private function withBalanceLock(string $uid, callable $fn)
+    {
+        $dir = (defined('DATA_DIR') ? DATA_DIR : '') . '/ledger/locks';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0750, true);
+        }
+        $safe = preg_replace('/[^a-z0-9_\-]/i', '', $uid) ?: 'unknown';
+        $lockPath = $dir . '/' . $safe . '.lock';
+        $fh = @fopen($lockPath, 'c+');
+        if ($fh === false) {
+            return $fn();
+        }
+        try {
+            flock($fh, LOCK_EX);
+            return $fn();
+        } finally {
+            flock($fh, LOCK_UN);
+            fclose($fh);
+        }
+    }
 }

@@ -28,7 +28,7 @@
   },
   "scripts": {
     "test": "phpunit",
-    "stan": "phpstan analyse app --level=6",
+    "stan": "phpstan analyse -c phpstan.neon",
     "serve": "php -S 0.0.0.0:8080 -t public"
   },
   "config": {

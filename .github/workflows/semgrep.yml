@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4.2.2
         with:
           persist-credentials: false
 
@@ -45,11 +45,14 @@ jobs:
             --exclude storage \
             --exclude data \
             --exclude node_modules \
+            --exclude docs \
+            --exclude docs/site \
+            --exclude docs/Whitpaper-and-Doucument \
             .
 
       - name: Upload SARIF to GitHub
         if: always() && hashFiles('semgrep.sarif') != '' && github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v3.28.1
         with:
           sarif_file: semgrep.sarif
           category: semgrep-php

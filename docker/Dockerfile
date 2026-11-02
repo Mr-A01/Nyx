@@ -32,3 +32,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD curl -fsS http://127.0.0.1/api/v3/ops/health || exit 1
 
 CMD ["apache2-foreground"]
+
+# Non-root default user for tooling/scanners; Apache image entrypoint may escalate as designed.
+USER www-data

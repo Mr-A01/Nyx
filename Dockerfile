@@ -15,3 +15,6 @@ RUN mkdir -p /var/www/html/data && chown -R www-data:www-data /var/www/html/data
 
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 EXPOSE 80
+
+# Non-root default user for tooling/scanners; Apache image entrypoint may escalate as designed.
+USER www-data

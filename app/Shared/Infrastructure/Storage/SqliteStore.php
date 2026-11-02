@@ -3,8 +3,14 @@ declare(strict_types=1);
 
 namespace Nyx\Shared\Infrastructure\Storage;
 
+/**
+ * Optional SQLite index for messages/tips.
+ * SOURCE OF TRUTH remains JSON FileStore under data/.
+ * Enable with MESSAGE_DB=sqlite. Failures are swallowed — never block the primary path.
+ */
 final class SqliteStore
 {
+
     private static ?\PDO $pdo = null;
     private static bool $tried = false;
 

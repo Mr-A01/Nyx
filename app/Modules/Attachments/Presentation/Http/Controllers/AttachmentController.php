@@ -122,6 +122,10 @@ final class AttachmentController {
 
     /** Raw binary body POST /api/v3/uploads/raw */
     public function uploadRaw(Request $r): JsonResponse {
+        $uid = AuthContext::userId($r);
+        if ($uid === '') {
+            return ApiEnvelope::error('unauthorized', 401);
+        }
         $id = UlidLikeId::generate('att');
         $raw = file_get_contents('php://input');
         if ($raw === false || $raw === '') return ApiEnvelope::error('empty body', 422);
@@ -131,7 +135,7 @@ final class AttachmentController {
         $mime = explode(';', $mime)[0];
         $isVoice = !empty($_SERVER['HTTP_X_NYX_IS_VOICE']);
         $meta = $this->saveBlob($id, $raw, [
-            'name' => $name, 'mime' => $mime, 'is_voice' => $isVoice, 'encrypted' => false,
+            'name' => $name, 'mime' => $mime, 'is_voice' => $isVoice, 'encrypted' => false, 'user_id' => $uid,
         ]);
         return ApiEnvelope::ok([
             'id' => $id, 'size' => $meta['size'], 'hash' => $meta['hash'],
@@ -141,18 +145,38 @@ final class AttachmentController {
     }
 
     public function get(Request $r): JsonResponse {
-        $id = (string)($r->query('id') ?? ($r->json()['id'] ?? ''));
-        if ($id === '') return ApiEnvelope::error('id required', 422);
+        $uid = AuthContext::userId($r);
+        if ($uid === '') {
+            return ApiEnvelope::error('unauthorized', 401);
+        }
+        $id = (string)($r->query('id') ?? (($r->json() ?? [])['id'] ?? ''));
+        if ($id === '') {
+            return ApiEnvelope::error('id required', 422);
+        }
+        $safe = preg_replace('/[^a-zA-Z0-9_\-]/', '', $id) ?: '';
+        if ($safe === '' || $safe !== $id) {
+            return ApiEnvelope::error('invalid id', 422);
+        }
         $meta = $this->store()->get("attachments/{$id}.json");
-        if (!$meta) return ApiEnvelope::error('not found', 404);
+        if (!is_array($meta)) {
+            return ApiEnvelope::error('not found', 404);
+        }
+        $owner = strtolower((string)($meta['user_id'] ?? ''));
+        $public = !empty($meta['public']);
+        if (!$public && ($owner === '' || $owner !== strtolower($uid))) {
+            return ApiEnvelope::error('forbidden', 403);
+        }
         $include = ($r->query('include_data') ?? '') === '1';
         if ($include) {
-            $safe = preg_replace('/[^a-zA-Z0-9_\-]/', '', $id);
             $blob = $this->blobDir() . '/' . $safe . '.bin';
-            if (is_file($blob)) $meta['data'] = base64_encode((string)file_get_contents($blob));
+            if (is_file($blob)) {
+                $meta['data_base64'] = base64_encode((string)file_get_contents($blob));
+            }
         }
-        $meta['url'] = $this->urlFor($id);
-        return ApiEnvelope::ok($meta);
+        $out = $meta;
+        unset($out['blob_path']);
+        $out['url'] = $this->urlFor($id);
+        return ApiEnvelope::ok($out);
     }
 
     public function download(Request $r): JsonResponse {

@@ -263,6 +263,8 @@ final class Application
             '/api/v3/search/global',
             '/api/v3/ledger/me',
             '/api/v3/ledger/history',
+            '/api/v3/attachments/get',
+            '/api/v3/attachments/download',
         ];
         if ($method === 'GET' && in_array($path, $authGets, true)) {
             return true;

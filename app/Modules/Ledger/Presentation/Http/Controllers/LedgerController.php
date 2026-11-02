@@ -93,37 +93,42 @@ final class LedgerController
         if ($from === $to) {
             return ApiEnvelope::error('cannot transfer to self', 422);
         }
-        $src = $this->balance($from);
-        if ((int)$src['available'] < $amount) {
-            return ApiEnvelope::error('insufficient balance', 402);
-        }
-        $dst = $this->balance($to);
-        $now = ApiEnvelope::nowMs();
-        $txId = substr(hash('sha256', $from . '|' . $to . '|' . $amount . '|' . $now . '|' . random_int(1, PHP_INT_MAX)), 0, 24);
-        $src['available'] = (int)$src['available'] - $amount;
-        $src['updated_ms'] = $now;
-        $dst['available'] = (int)$dst['available'] + $amount;
-        $dst['updated_ms'] = $now;
         $memo = substr((string)($b['memo'] ?? $b['reason'] ?? ''), 0, 200);
-        $tx = [
-            'id' => $txId,
-            'from' => $from,
-            'to' => $to,
-            'amount' => $amount,
-            'currency' => 'NYX',
-            'memo' => $memo,
-            'created_ms' => $now,
-            'type' => 'transfer',
-        ];
-        if (SodiumBox::available() && !empty($b['sig'])) {
-            $tx['client_sig'] = substr((string)$b['sig'], 0, 256);
-        }
-        $this->store()->put($this->balKey($from), $src);
-        $this->store()->put($this->balKey($to), $dst);
-        $this->store()->put("ledger/tx/{$from}/{$txId}.json", $tx);
-        $this->store()->put("ledger/tx/{$to}/{$txId}.json", $tx);
-        $this->store()->put("ledger/receipts/{$txId}.json", $tx);
-        return ApiEnvelope::ok(['tx' => $tx, 'balance' => $src]);
+        // Lock both parties in stable order to reduce double-spend races
+        $lockA = min($from, $to);
+        $lockB = max($from, $to);
+        $result = $this->withBalanceLock($lockA, function () use ($from, $to, $amount, $memo, $lockB) {
+            return $this->withBalanceLock($lockB, function () use ($from, $to, $amount, $memo) {
+                $src = $this->balance($from);
+                if ((int)$src['available'] < $amount) {
+                    return ApiEnvelope::error('insufficient balance', 402);
+                }
+                $dst = $this->balance($to);
+                $now = ApiEnvelope::nowMs();
+                $txId = substr(hash('sha256', $from . '|' . $to . '|' . $amount . '|' . $now . '|' . random_int(1, PHP_INT_MAX)), 0, 24);
+                $src['available'] = (int)$src['available'] - $amount;
+                $src['updated_ms'] = $now;
+                $dst['available'] = (int)$dst['available'] + $amount;
+                $dst['updated_ms'] = $now;
+                $tx = [
+                    'id' => $txId,
+                    'from' => $from,
+                    'to' => $to,
+                    'amount' => $amount,
+                    'currency' => 'NYX',
+                    'memo' => $memo,
+                    'created_ms' => $now,
+                    'type' => 'transfer',
+                ];
+                $this->store()->put($this->balKey($from), $src);
+                $this->store()->put($this->balKey($to), $dst);
+                $this->store()->put("ledger/tx/{$from}/{$txId}.json", $tx);
+                $this->store()->put("ledger/tx/{$to}/{$txId}.json", $tx);
+                $this->store()->put("ledger/receipts/{$txId}.json", $tx);
+                return ApiEnvelope::ok(['tx' => $tx, 'balance' => $src]);
+            });
+        });
+        return $result instanceof JsonResponse ? $result : ApiEnvelope::error('transfer failed', 500);
     }
 
     /** Bootstrap credits for new users / demos (idempotent small grant). */

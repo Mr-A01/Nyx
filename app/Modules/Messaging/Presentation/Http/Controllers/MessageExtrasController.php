@@ -8,6 +8,7 @@ use Nyx\Shared\Infrastructure\Http\ApiEnvelope;
 use Nyx\Shared\Infrastructure\Http\AuthContext;
 use Nyx\Shared\Infrastructure\Storage\FileStore;
 use Nyx\Shared\Infrastructure\IdGenerator\UlidLikeId;
+use Nyx\Shared\Infrastructure\Messaging\AccessGuard;
 
 /** Bookmarks, scheduled outbox, message TTL helpers, threads. */
 final class MessageExtrasController
@@ -19,8 +20,7 @@ final class MessageExtrasController
 
     private function uid(Request $r, array $b = []): string
     {
-        $u = AuthContext::userId($r, $b);
-        return $u !== '' ? $u : (string)($b['user_id'] ?? '');
+        return AuthContext::userId($r, $b);
     }
 
     public function bookmark(Request $r): JsonResponse
@@ -32,6 +32,9 @@ final class MessageExtrasController
         $cid = (string)($b['conv_id'] ?? $b['conversation_id'] ?? '');
         $action = strtolower((string)($b['action'] ?? 'add'));
         if ($mid === '') return ApiEnvelope::error('message_id required', 422);
+        if ($cid !== '' && !AccessGuard::make()->canRead($cid, $uid)) {
+            return ApiEnvelope::error('forbidden', 403);
+        }
         $rec = $this->store()->get("bookmarks/{$uid}.json");
         if (!is_array($rec)) $rec = ['user_id' => $uid, 'items' => []];
         $items = array_values(array_filter($rec['items'] ?? [], static fn($x) => is_array($x) && ($x['message_id'] ?? '') !== $mid));
@@ -46,7 +49,7 @@ final class MessageExtrasController
         $rec['items'] = $items;
         $rec['updated_ms'] = ApiEnvelope::nowMs();
         $this->store()->put("bookmarks/{$uid}.json", $rec);
-        return ApiEnvelope::ok(['user_id' => $uid, 'items' => $items, 'count' => count($items), 'action' => $action]);
+        return ApiEnvelope::ok(['count' => count($items), 'items' => $items]);
     }
 
     public function bookmarks(Request $r): JsonResponse
@@ -55,10 +58,9 @@ final class MessageExtrasController
         if ($uid === '') return ApiEnvelope::error('unauthorized', 401);
         $rec = $this->store()->get("bookmarks/{$uid}.json");
         $items = is_array($rec) ? ($rec['items'] ?? []) : [];
-        return ApiEnvelope::ok(['user_id' => $uid, 'items' => $items, 'count' => count($items)]);
+        return ApiEnvelope::ok(['items' => $items, 'count' => count($items)]);
     }
 
-    /** Queue a scheduled message (delivered by client poll or cron). */
     public function schedule(Request $r): JsonResponse
     {
         $b = $r->json() ?? [];
@@ -68,15 +70,26 @@ final class MessageExtrasController
         $text = (string)($b['body'] ?? $b['text'] ?? '');
         $cipher = (string)($b['ciphertext'] ?? '');
         $when = (int)($b['send_at_ms'] ?? $b['scheduled_at'] ?? 0);
-        if ($cid === '' || ($text === '' && $cipher === '') || $when < ApiEnvelope::nowMs()) {
-            return ApiEnvelope::error('conv_id, body/ciphertext, future send_at_ms required', 422);
+        if ($cid === '' || ($text === '' && $cipher === '')) {
+            return ApiEnvelope::error('conv_id and body/ciphertext required', 422);
         }
-        $id = UlidLikeId::generate('sch');
+        if ($when <= ApiEnvelope::nowMs()) {
+            return ApiEnvelope::error('send_at_ms must be future', 422);
+        }
+        $guard = AccessGuard::make();
+        if (!$guard->canWrite($cid, $uid)) {
+            return ApiEnvelope::error('forbidden', 403);
+        }
+        $sp = $guard->space($cid);
+        if ($guard->requiresE2ee($sp, $cid) && $cipher === '' && empty($b['insecure_ok'])) {
+            return ApiEnvelope::error('e2ee_required', 422);
+        }
+        $id = UlidLikeId::generate();
         $rec = [
             'id' => $id,
             'user_id' => $uid,
             'conv_id' => $cid,
-            'body' => $text !== '' ? $text : null,
+            'body' => $cipher !== '' ? null : ($text !== '' ? $text : null),
             'ciphertext' => $cipher !== '' ? $cipher : null,
             'send_at_ms' => $when,
             'silent' => !empty($b['silent']),
@@ -99,8 +112,7 @@ final class MessageExtrasController
                 if (is_array($rec) && ($rec['status'] ?? '') === 'pending') $items[] = $rec;
             }
         }
-        usort($items, static fn($a, $b) => ($a['send_at_ms'] ?? 0) <=> ($b['send_at_ms'] ?? 0));
-        return ApiEnvelope::ok(['user_id' => $uid, 'items' => $items, 'count' => count($items)]);
+        return ApiEnvelope::ok(['items' => $items, 'count' => count($items)]);
     }
 
     public function scheduleCancel(Request $r): JsonResponse
@@ -116,7 +128,6 @@ final class MessageExtrasController
         return ApiEnvelope::ok(['cancelled' => true, 'id' => $id]);
     }
 
-    /** Due scheduled messages for this user (client or worker claims them). */
     public function scheduleDue(Request $r): JsonResponse
     {
         $uid = $this->uid($r);
@@ -138,12 +149,16 @@ final class MessageExtrasController
         return ApiEnvelope::ok(['items' => $due, 'count' => count($due)]);
     }
 
-    /** Thread messages under a parent. */
     public function thread(Request $r): JsonResponse
     {
+        $uid = $this->uid($r);
+        if ($uid === '') return ApiEnvelope::error('unauthorized', 401);
         $cid = (string)($r->query('conv_id') ?? '');
         $parent = (string)($r->query('parent_id') ?? $r->query('reply_to') ?? '');
         if ($cid === '' || $parent === '') return ApiEnvelope::error('conv_id and parent_id required', 422);
+        if (!AccessGuard::make()->canRead($cid, $uid)) {
+            return ApiEnvelope::error('forbidden', 403);
+        }
         $items = [];
         $dir = $this->store()->root() . "/messages/{$cid}";
         if (is_dir($dir)) {

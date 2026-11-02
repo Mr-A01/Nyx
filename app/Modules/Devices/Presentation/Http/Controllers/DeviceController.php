@@ -22,23 +22,39 @@ final class DeviceController {
         return ApiEnvelope::ok($rec);
     }
     public function touch(Request $r): JsonResponse {
-        $b = $r->json() ?? []; $did = (string)($b['device_id'] ?? $r->query('device_id') ?? '');
+        $b = $r->json() ?? [];
+        $uid = AuthContext::userId($r, $b);
+        if ($uid === '') return ApiEnvelope::error('unauthorized', 401);
+        $did = (string)($b['device_id'] ?? $r->query('device_id') ?? '');
         if ($did === '') return ApiEnvelope::error('device_id required', 422);
-        $s = new FileStore(defined('DATA_DIR') ? DATA_DIR : ''); $rec = $s->get("devices/{$did}.json") ?? ['device_id' => $did];
-        $rec['touched_ms'] = ApiEnvelope::nowMs(); $s->put("devices/{$did}.json", $rec); return ApiEnvelope::ok($rec);
+        $s = new FileStore(defined('DATA_DIR') ? DATA_DIR : '');
+        $rec = $s->get("devices/{$did}.json");
+        if (!is_array($rec) || strtolower((string)($rec['user_id'] ?? '')) !== strtolower($uid)) {
+            return ApiEnvelope::error('forbidden', 403);
+        }
+        $rec['touched_ms'] = ApiEnvelope::nowMs();
+        $s->put("devices/{$did}.json", $rec);
+        return ApiEnvelope::ok($rec);
     }
     public function revoke(Request $r): JsonResponse {
-        $did = (string)(($r->json() ?? [])['device_id'] ?? '');
+        $b = $r->json() ?? [];
+        $did = (string)($b['device_id'] ?? '');
+        $uid = AuthContext::userId($r, $b);
+        if ($uid === '') return ApiEnvelope::error('unauthorized', 401);
         if ($did === '') return ApiEnvelope::error('device_id required', 422);
-        (new FileStore(defined('DATA_DIR') ? DATA_DIR : ''))->delete("devices/{$did}.json");
+        $s = new FileStore(defined('DATA_DIR') ? DATA_DIR : '');
+        $rec = $s->get("devices/{$did}.json");
+        if (!is_array($rec) || strtolower((string)($rec['user_id'] ?? '')) !== strtolower($uid)) {
+            return ApiEnvelope::error('forbidden', 403);
+        }
+        $s->delete("devices/{$did}.json");
         return ApiEnvelope::ok(['device_id' => $did, 'revoked' => true]);
     }
 
     public function list(Request $r): JsonResponse {
         $b = $r->json() ?? [];
         $uid = AuthContext::userId($r, $b);
-        if ($uid === '') $uid = (string)($b['user_id'] ?? $r->query('user_id') ?? '');
-        if ($uid === '') return ApiEnvelope::error('user_id required', 422);
+        if ($uid === '') return ApiEnvelope::error('unauthorized', 401);
         $store = new FileStore(defined('DATA_DIR') ? DATA_DIR : '');
         $idx = $store->get("devices/by_user/{$uid}.json");
         $ids = is_array($idx) && is_array($idx['device_ids'] ?? null) ? $idx['device_ids'] : [];

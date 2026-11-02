@@ -78,15 +78,21 @@ final class Application
 
     private function clientIp(Request $request): string
     {
-        $xff = (string)($request->header('X-Forwarded-For') ?? '');
-        if ($xff !== '') {
-            $ip = trim(explode(',', $xff)[0]);
-            if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                return $ip;
+        $remote = (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        $remote = filter_var($remote, FILTER_VALIDATE_IP) ? $remote : '0.0.0.0';
+        // Only honor X-Forwarded-For when explicitly trusting a reverse proxy
+        $trust = filter_var(getenv('NYX_TRUST_PROXY') ?: 'false', FILTER_VALIDATE_BOOLEAN);
+        if ($trust) {
+            $xff = (string)($request->header('X-Forwarded-For') ?? '');
+            if ($xff !== '') {
+                $ip = trim(explode(',', $xff)[0]);
+                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)
+                    || filter_var($ip, FILTER_VALIDATE_IP)) {
+                    return $ip;
+                }
             }
         }
-        $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
-        return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
+        return $remote;
     }
 
     private function enforceRateLimits(Request $request, string $method, string $path): ?Response

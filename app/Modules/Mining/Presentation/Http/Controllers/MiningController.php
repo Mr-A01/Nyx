@@ -150,6 +150,22 @@ final class MiningController
         if ($reward > self::MAX_REWARD_PER_SUBMIT) {
             $reward = self::MAX_REWARD_PER_SUBMIT;
         }
+        // Session-bound attestation: client must sign canonical work with session token HMAC
+        $sig = (string)($b['work_sig'] ?? $r->header('X-Nyx-Work-Sig') ?? '');
+        $token = AuthContext::bearerToken($r);
+        if ($token === '') {
+            return ApiEnvelope::error('unauthorized', 401);
+        }
+        $canon = json_encode(['user_id' => $uid, 'works' => $accepted], JSON_UNESCAPED_SLASHES);
+        $expect = hash_hmac('sha256', (string)$canon, $token);
+        // Soft-require: if sig present must match; if NYX_REQUIRE_WORK_SIG then mandatory
+        $requireSig = filter_var(getenv('NYX_REQUIRE_WORK_SIG') ?: 'false', FILTER_VALIDATE_BOOLEAN);
+        if ($requireSig && $sig === '') {
+            return ApiEnvelope::error('work_sig required', 422);
+        }
+        if ($sig !== '' && !hash_equals($expect, $sig)) {
+            return ApiEnvelope::error('invalid work_sig', 403);
+        }
 
         // Daily cap
         $day = $this->dayKey();

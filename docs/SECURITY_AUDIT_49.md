@@ -26,3 +26,10 @@
 - Push subscription edge cases
 - Rate-limit nested GC completeness
 - SQLite vs FileStore dual-store consistency
+
+## Batch 3
+- Push/notifications residual user_id body fallbacks removed
+- Space get: private spaces require canRead; members requires membership
+- Mining optional work_sig (HMAC with session token); NYX_REQUIRE_WORK_SIG
+- Settlement mark: only batch creator; finalize needs confirm_finalize
+- Dockerfile + GHCR workflow (#50)

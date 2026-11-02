@@ -127,6 +127,14 @@ final class SettlementController
         if (!in_array($status, ['exported', 'submitted', 'finalized', 'failed'], true)) {
             return ApiEnvelope::error('invalid status', 422);
         }
+        $creator = strtolower((string)($batch['created_by'] ?? $batch['user_id'] ?? $batch['owner_id'] ?? ''));
+        if ($creator !== '' && $creator !== strtolower($uid)) {
+            return ApiEnvelope::error('forbidden', 403);
+        }
+        // Finalize is privileged: require matching creator AND explicit confirm
+        if ($status === 'finalized' && empty($b['confirm_finalize'])) {
+            return ApiEnvelope::error('confirm_finalize required', 422);
+        }
         $batch['status'] = $status;
         $batch['bridge'] = array_merge(is_array($batch['bridge'] ?? null) ? $batch['bridge'] : [], [
             'target' => (string)($b['target'] ?? $batch['bridge']['target'] ?? 'pending'),

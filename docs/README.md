@@ -13,3 +13,8 @@
 | [assets/](assets/) | Brand SVGs for README |
 
 Architecture notes live under `docs/architecture/` when present.
+
+## Public site pages
+- Product: [Nyx-V-04.html](Whitpaper-and-Doucument/Nyx-V-04.html) → Pages `/`
+- Whitepaper: [NYX-Whitpaper-01.html](Whitpaper-and-Doucument/NYX-Whitpaper-01.html) → `/whitepaper.html`
+- Documentation: [NYX-Doucument-01.html](Whitpaper-and-Doucument/NYX-Doucument-01.html) → `/documentation.html`

@@ -1,12 +1,11 @@
-name: Deploy docs site to Pages
+name: Deploy project site to Pages
 
 on:
   push:
     branches: ["main"]
     paths:
-      - 'docs/**'
-      - 'README.md'
-      - 'README-fa.md'
+      - 'docs/site/**'
+      - 'docs/Whitpaper-and-Doucument/**'
       - '.github/workflows/static.yml'
   workflow_dispatch:
 
@@ -29,13 +28,24 @@ jobs:
       - uses: actions/checkout@v4
       - name: Assemble site
         run: |
-          mkdir -p _site/docs _site/assets
-          cp -r docs/site/* _site/
+          mkdir -p _site
+          # Primary site = original NYX product pages
+          cp docs/site/index.html _site/index.html
+          cp docs/site/whitepaper.html _site/whitepaper.html
+          cp docs/site/documentation.html _site/documentation.html
+          # Fallback from source folder if site copies missing
+          test -f _site/index.html || cp docs/Whitpaper-and-Doucument/Nyx-V-04.html _site/index.html
+          test -f _site/whitepaper.html || cp docs/Whitpaper-and-Doucument/NYX-Whitpaper-01.html _site/whitepaper.html
+          test -f _site/documentation.html || cp docs/Whitpaper-and-Doucument/NYX-Doucument-01.html _site/documentation.html
+          # Optional brand assets
+          mkdir -p _site/assets
+          cp -r docs/site/assets/* _site/assets/ 2>/dev/null || true
           cp docs/assets/*.svg _site/assets/ 2>/dev/null || true
-          cp docs/site/assets/* _site/assets/ 2>/dev/null || true
-          cp docs/*.md _site/docs/ 2>/dev/null || true
-          cp -r docs/Whitpaper-and-Doucument _site/docs/ 2>/dev/null || true
-          cp README.md README-fa.md _site/ 2>/dev/null || true
+          # Convenience redirects / aliases
+          cp _site/whitepaper.html _site/NYX-Whitpaper-01.html
+          cp _site/documentation.html _site/NYX-Doucument-01.html
+          # Simple 404 back home
+          printf '%s\n' '<!DOCTYPE html><meta http-equiv="refresh" content="0;url=./"><a href="./">NYX</a>' > _site/404.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
